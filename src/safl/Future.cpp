@@ -35,6 +35,7 @@ ContextNtBase::ContextNtBase() noexcept
     : m_prev(nullptr)
     , m_next(nullptr)
     , m_isValueSet(false)
+    , m_isShadowed(false)
 {
     DLOG("new");
 }
@@ -54,6 +55,12 @@ void ContextNtBase::setValue() noexcept
     }
 }
 
+void ContextNtBase::makeShadowOf(ContextNtBase *next) noexcept
+{
+    m_isShadowed = true;
+    setTarget(next);
+}
+
 void ContextNtBase::setTarget(ContextNtBase *next) noexcept
 {
     DLOG("setTarget: " << mnemo(next));
@@ -70,9 +77,19 @@ void ContextNtBase::fulfil() noexcept
 {
     DLOG("fulfil");
     assert(s_executor != nullptr);
-    s_executor->invoke(this, [](ContextNtBase *self)
+
+    auto doFulfil = [](ContextNtBase *self)
     {
         self->m_next->acceptInput();
         self->m_next->m_prev = nullptr;
-    });
+    };
+
+    if ( m_isShadowed )
+    {
+        doFulfil(this);
+    }
+    else
+    {
+        s_executor->invoke(this, doFulfil);
+    }
 }

@@ -68,6 +68,9 @@ public:
     SharedPromise(const SharedPromise &) = default;
     SharedPromise(SharedPromise &&) = default;
 
+    SharedPromise &operator=(const SharedPromise &) = default;
+    SharedPromise &operator=(SharedPromise &&) = default;
+
     Promise<ValueType> *operator->() const noexcept
     {
         return m_p.get();

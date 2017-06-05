@@ -65,6 +65,7 @@ public:
     }
 
     void setValue() noexcept;
+    void makeShadowOf(ContextNtBase *next) noexcept;
 
 protected:
     ContextNtBase() noexcept;
@@ -79,6 +80,7 @@ protected:
     ContextNtBase *m_prev;
     ContextNtBase *m_next;
     bool m_isValueSet;
+    bool m_isShadowed;
 };
 
 /*******************************************************************************
@@ -269,13 +271,18 @@ class AsyncNextContext final
 private:
     void acceptInput() noexcept override
     {
-        DLOG(">> acceptInput (create shadow)");
-        m_shadow = this->m_f(this->prev()->value()).detachContext();
-        m_shadow->then([this](const ValueType &value)
+        if ( m_shadow == nullptr )
         {
-            this->setValue(value);
-        });
-        DLOG("<< acceptInput (create shadow)");
+            DLOG(">> acceptInput (create shadow)");
+            m_shadow = this->m_f(this->prev()->value()).makeShadowOf(this);
+            DLOG("<< acceptInput (create shadow)");
+        }
+        else
+        {
+            DLOG(">> acceptInput (process shadow)");
+            this->setValue(m_shadow->value());
+            DLOG("<< acceptInput (process shadow)");
+        }
     }
 
 private:
@@ -312,9 +319,10 @@ public:
     {
     }
 
-    ContextType *detachContext()
+    ContextType *makeShadowOf(ContextType *ctx)
     {
         ContextType *tmp = m_ctx;
+        m_ctx->makeShadowOf(ctx);
         m_ctx = nullptr;
         return tmp;
     }

@@ -10,8 +10,10 @@
 
 // Std includes:
 #include <queue>
+#include <map>
 
 #define EXPECT_FUTURE_FULFILLED() EXPECT_TRUE(processSingle())
+#define EXPECT_NO_FULFILLED_FUTURES() EXPECT_EQ(0, queueSize())
 
 using namespace safl;
 
@@ -51,6 +53,33 @@ private:
     std::queue<std::pair<ContextType*, FunctionType>> m_queue;
 };
 
+class MyInt final
+{
+public:
+    explicit MyInt(int value)
+        : m_value(value)
+    {
+    }
+
+    bool operator==(int value) const
+    {
+        return m_value == value;
+    }
+
+    int value() const
+    {
+        return m_value;
+    }
+
+private:
+    int m_value;
+};
+
+std::ostream &operator<<(std::ostream &os, const MyInt &value)
+{
+    return os << "MyInt(" << value.value() << ")";
+}
+
 class SaflTest
         : public ::testing::Test
 {
@@ -60,13 +89,38 @@ public:
         TestExecutor::set(&m_executor);
     }
 
+    void TearDown() override
+    {
+        EXPECT_NO_FULFILLED_FUTURES();
+    }
+
     bool processSingle()
     {
         return m_executor.processSingle();
     }
 
+    std::size_t queueSize()
+    {
+        return m_executor.queueSize();
+    }
+
+    Future<MyInt> future(int key)
+    {
+        SharedPromise<MyInt> p;
+        m_promises[key] = p;
+        return p->future();
+    }
+
+    void setValue(int key, int value)
+    {
+        SharedPromise<MyInt> p = m_promises[key];
+        m_promises.erase(key);
+        p->setValue(MyInt(value));
+    }
+
 private:
     TestExecutor m_executor;
+    std::map<int, SharedPromise<MyInt>> m_promises;
 };
 
 TEST_F(SaflTest, canCreatePromisePod)
@@ -74,15 +128,9 @@ TEST_F(SaflTest, canCreatePromisePod)
     Promise<int> p;
 }
 
-class MySpecialClass final
-{
-public:
-    explicit MySpecialClass(int) {}
-};
-
 TEST_F(SaflTest, canCreatePromiseNoDefaultCtor)
 {
-    Promise<MySpecialClass> p;
+    Promise<MyInt> p;
 }
 
 TEST_F(SaflTest, valueThenLambda)
@@ -151,4 +199,38 @@ TEST_F(SaflTest, setValueBeforeThen)
     // of the lambda above
     EXPECT_FUTURE_FULFILLED();
     EXPECT_EQ(72, calledWith);
+}
+
+TEST_F(SaflTest, futureThenFuture)
+{
+    SharedPromise<std::string> p;
+
+    auto f = future(0);
+
+    int calledWith = 0;
+    std::string calledString;
+    f.then([&calledWith, p](const MyInt &value) -> Future<std::string>
+    {
+        calledWith = value.value();
+        return p->future();
+    }).then([&](const std::string &value)
+    {
+        calledString = value;
+    });
+
+    EXPECT_NO_FULFILLED_FUTURES();
+
+    setValue(0, 1986);
+    EXPECT_FUTURE_FULFILLED();
+    EXPECT_EQ(1986, calledWith);
+    EXPECT_TRUE(calledString.empty());
+
+    EXPECT_NO_FULFILLED_FUTURES();
+
+    p->setValue("hello, world");
+
+    /* Only one future must be fulfilled. Multiple dispatching for queueing
+     * futures is not acceptable! */
+    EXPECT_FUTURE_FULFILLED();
+    EXPECT_EQ("hello, world", calledString);
 }
