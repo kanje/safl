@@ -8,7 +8,7 @@
 #include <iostream>
 
 char mnemo(void *);
-#define DLOG(__message) do { std::cout << "[saef] " << mnemo(static_cast<ContextNtBase*>(this)) << ": " << __message << std::endl; } while ( !42 )
+#define DLOG(__message) do { std::cout << "[safl] " << mnemo(static_cast<ContextNtBase*>(this)) << ": " << __message << std::endl; } while ( !42 )
 
 namespace safl
 {
@@ -343,6 +343,24 @@ public:
 
 protected:
     Context *m_ctx;
+};
+
+/*******************************************************************************
+ * Executor.
+ */
+
+class Executor
+{
+public:
+    using ContextType = ContextNtBase;
+    using FunctionType = void(*)(ContextNtBase*);
+
+public:
+    static void set(Executor *executor) noexcept;
+    virtual void invoke(ContextType *ctx, FunctionType f) noexcept = 0;
+
+protected:
+    ~Executor() noexcept = default;
 };
 
 } // namespace detail

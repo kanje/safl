@@ -5,8 +5,6 @@
 cmake_minimum_required(VERSION 3.3)
 project(SAFL CXX)
 
-set(TARGET safl)
-
 set(CMAKE_CXX_STANDARD 14)
 add_compile_options(
     -pedantic
@@ -18,30 +16,34 @@ add_compile_options(
     -Wold-style-cast
 )
 
-find_package(Qt5 QUIET REQUIRED Core CONFIG NO_CMAKE_PACKAGE_REGISTRY)
+# library:
+set(TARGET safl)
 
-add_executable(${TARGET}
+add_library(${TARGET}
     include/safl/detail/FutureDetail.h
     include/safl/Future.h
     include/safl/ToFuture.h
     src/safl/Future.cpp
-    test/main.cpp
 )
-
 target_include_directories(${TARGET}
-  PRIVATE
+  PUBLIC
     include
 )
 
-target_link_libraries(${TARGET}
-  PRIVATE
-    Qt5::Core
-)
+# unit tests:
+enable_testing()
+set(TEST_TARGET ut-${TARGET})
 
-set_target_properties(${TARGET}
-  PROPERTIES
-    AUTOMOC ON
+add_executable(${TEST_TARGET}
+    test/Tests.cpp
 )
+target_link_libraries(${TEST_TARGET}
+  PRIVATE
+    gtest_main
+    gtest
+    safl
+)
+add_test(SaflTest ${TEST_TARGET})
 
 # add these files to IDE:
 add_custom_target(readme_txt SOURCES README.md)

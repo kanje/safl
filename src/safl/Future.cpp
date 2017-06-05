@@ -9,9 +9,6 @@
 #include <cassert>
 #include <map>
 
-// Other includes:
-#include <QTimer>
-
 char mnemo(void *p)
 {
     static std::map<void*, char> s_map;
@@ -26,6 +23,13 @@ char mnemo(void *p)
 }
 
 using namespace safl::detail;
+
+static Executor *s_executor = nullptr;
+
+void Executor::set(Executor *executor) noexcept
+{
+    s_executor = executor;
+}
 
 ContextNtBase::ContextNtBase() noexcept
     : m_prev(nullptr)
@@ -43,6 +47,7 @@ ContextNtBase::~ContextNtBase() noexcept
 void ContextNtBase::setValue() noexcept
 {
     assert(m_isValueSet == false);
+    m_isValueSet = true;
     if ( m_next )
     {
         fulfil();
@@ -64,9 +69,10 @@ void ContextNtBase::setTarget(ContextNtBase *next) noexcept
 void ContextNtBase::fulfil() noexcept
 {
     DLOG("fulfil");
-    QTimer::singleShot(0, [this]()
+    assert(s_executor != nullptr);
+    s_executor->invoke(this, [](ContextNtBase *self)
     {
-        m_next->acceptInput();
-        m_next->m_prev = nullptr;
+        self->m_next->acceptInput();
+        self->m_next->m_prev = nullptr;
     });
 }
