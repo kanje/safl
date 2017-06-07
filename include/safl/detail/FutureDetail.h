@@ -4,6 +4,9 @@
 
 #pragma once
 
+// Local includes:
+#include "FunctionTraits.h"
+
 // Std includes:
 #include <iostream>
 
@@ -121,22 +124,10 @@ class SyncNextContext;
 template<typename ValueType, typename Func, typename InputType>
 class AsyncNextContext;
 
-template<typename Func, typename InputType>
-struct ResultOfHelper final
-{
-    using ValueType = std::result_of_t<Func(InputType)>;
-};
-
-template<typename Func>
-struct ResultOfHelper<Func, void>
-{
-    using ValueType = std::result_of_t<Func()>;
-};
-
-template<typename Func, typename InputType>
+template<typename tFunc>
 struct ThenHelper final
 {
-    using ResultType = typename ResultOfHelper<Func, InputType>::ValueType;
+    using ResultType = typename FunctionTraits<tFunc>::ReturnType;
     using IsResultFuture = std::is_base_of<FutureNtBase, ResultType>;
     using FutureType = std::conditional_t<IsResultFuture::value,
                                           ResultType, Future<ResultType>>;
@@ -153,7 +144,7 @@ class ContextBase
         : public ContextValueBase<ValueType>
 {
 public:
-    template<typename Func, typename Then = ThenHelper<Func, ValueType>>
+    template<typename Func, typename Then = ThenHelper<Func>>
     typename Then::FutureType then(Func &&f)
     {
         DLOG(">> then");

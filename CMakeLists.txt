@@ -20,6 +20,7 @@ add_compile_options(
 set(TARGET safl)
 
 add_library(${TARGET}
+    include/safl/detail/FunctionTraits.h
     include/safl/detail/FutureDetail.h
     include/safl/Future.h
     include/safl/ToFuture.h
