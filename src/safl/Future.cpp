@@ -93,3 +93,7 @@ void ContextNtBase::fulfil() noexcept
         s_executor->invoke(this, doFulfil);
     }
 }
+
+ErrorHandlerNtBase::~ErrorHandlerNtBase() noexcept
+{
+}

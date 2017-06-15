@@ -7,9 +7,6 @@
 // Local includes:
 #include "detail/FutureDetail.h"
 
-// Std includes:
-#include <memory>
-
 namespace safl
 {
 

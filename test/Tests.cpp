@@ -235,6 +235,47 @@ TEST_F(SaflTest, futureThenFuture)
     EXPECT_EQ("hello, world", calledString);
 }
 
+TEST_F(SaflTest, basicOnError)
+{
+    Promise<double> p;
+    Future<double> f = p.future();
+
+    int calledWithInt = 0;
+    std::string calledWithString;
+
+    f.onError([&](int error)
+    {
+        calledWithInt = error;
+        return 4.2;
+    }).onError([&](std::string error)
+    {
+        calledWithString = error;
+        return 7.6;
+    });
+
+    p.setError(std::string("hello, world"));
+    ASSERT_TRUE(f.isReady());
+    EXPECT_DOUBLE_EQ(7.6, f.value());
+    EXPECT_EQ(0, calledWithInt);
+    EXPECT_EQ("hello, world", calledWithString);
+}
+
+TEST_F(SaflTest, onErrorWithVoidFuture)
+{
+    Promise<void> p;
+    Future <void> f = p.future();
+
+    int calledWithInt = 0;
+    f.onError([&](int error)
+    {
+        calledWithInt = error;
+    });
+
+    p.setError(99);
+    ASSERT_TRUE(f.isReady());
+    EXPECT_EQ(99, calledWithInt);
+}
+
 /*******************************************************************************
  * Sanity checks for function traits.
  */
