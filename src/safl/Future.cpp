@@ -31,7 +31,7 @@ void Executor::set(Executor *executor) noexcept
     s_executor = executor;
 }
 
-ContextNtBase::ContextNtBase() noexcept
+ContextNtBase::ContextNtBase()
     : m_prev(nullptr)
     , m_next(nullptr)
     , m_isValueSet(false)
@@ -40,12 +40,12 @@ ContextNtBase::ContextNtBase() noexcept
     DLOG("new");
 }
 
-ContextNtBase::~ContextNtBase() noexcept
+ContextNtBase::~ContextNtBase()
 {
     DLOG("delete");
 }
 
-void ContextNtBase::setValue() noexcept
+void ContextNtBase::setValue()
 {
     assert(m_isValueSet == false);
     m_isValueSet = true;
@@ -55,13 +55,13 @@ void ContextNtBase::setValue() noexcept
     }
 }
 
-void ContextNtBase::makeShadowOf(ContextNtBase *next) noexcept
+void ContextNtBase::makeShadowOf(ContextNtBase *next)
 {
     m_isShadowed = true;
     setTarget(next);
 }
 
-void ContextNtBase::setTarget(ContextNtBase *next) noexcept
+void ContextNtBase::setTarget(ContextNtBase *next)
 {
     DLOG("setTarget: " << mnemo(next));
     assert(m_next == nullptr);
@@ -73,7 +73,7 @@ void ContextNtBase::setTarget(ContextNtBase *next) noexcept
     }
 }
 
-void ContextNtBase::fulfil() noexcept
+void ContextNtBase::fulfil()
 {
     DLOG("fulfil");
     assert(s_executor != nullptr);
@@ -91,6 +91,34 @@ void ContextNtBase::fulfil() noexcept
     else
     {
         s_executor->invoke(this, doFulfil);
+    }
+}
+
+void ContextNtBase::addErrorHandler(std::unique_ptr<ErrorHandlerNtBase> &&errorHandler)
+{
+    /* Maybe the new error handle can handle a stored error? */
+    if ( m_storedError && m_storedError->isType(errorHandler.get()) )
+    {
+        errorHandler->acceptError(this, m_storedError.get());
+    }
+    else
+    {
+        m_errorHandlers.push_back(std::move(errorHandler));
+    }
+}
+
+void ContextNtBase::storeError(std::unique_ptr<StoredErrorNtBase> &&error)
+{
+    assert(!m_storedError);
+    m_storedError = std::move(error);
+
+    for ( const auto &errorHandler : m_errorHandlers )
+    {
+        if ( errorHandler->isType(m_storedError.get()) )
+        {
+            errorHandler->acceptError(this, m_storedError.get());
+            break;
+        }
     }
 }
 

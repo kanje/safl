@@ -6,10 +6,10 @@
 
 // Local includes:
 #include "FunctionTraits.h"
+#include "Utils.h"
 
 // Std includes:
 #include <iostream>
-#include <typeindex>
 #include <vector>
 #include <memory>
 
@@ -22,6 +22,10 @@ namespace safl
 template<typename ValueType>
 class Future;
 
+/**
+ * @internal
+ * @brief The implementation detail namespace.
+ */
 namespace detail
 {
 
@@ -30,96 +34,109 @@ namespace detail
  */
 
 class FutureNtBase
+        : private NonCopyable
 {
-public:
-    // non-copyable
-    FutureNtBase(const FutureNtBase&) = delete;
-    FutureNtBase &operator=(const FutureNtBase&) = delete;
-
-    // movable
-    FutureNtBase(FutureNtBase&&) noexcept = default;
-    FutureNtBase &operator=(FutureNtBase&&) noexcept = default;
-
 protected:
-    FutureNtBase() noexcept = default;
-    ~FutureNtBase() noexcept = default;
+    FutureNtBase() = default;
+    ~FutureNtBase() = default;
 };
 
-
 class PromiseNtBase
+        : private NonCopyable
 {
-public:
-    // non-copyable
-    PromiseNtBase(const PromiseNtBase&) = delete;
-    PromiseNtBase &operator=(const PromiseNtBase&) = delete;
-
-    // movable
-    PromiseNtBase(PromiseNtBase&&) noexcept = default;
-    PromiseNtBase &operator=(PromiseNtBase&&) noexcept = default;
-
 protected:
     PromiseNtBase() noexcept = default;
     ~PromiseNtBase() noexcept = default;
 };
 
-class ContextNtBase
+class StoredErrorNtBase
+        : public TypeEraser
 {
 public:
-    // non-copyable, non-movable
-    ContextNtBase(const ContextNtBase&) = delete;
-    ContextNtBase &operator=(const ContextNtBase&) = delete;
+    StoredErrorNtBase(std::type_index typeIndex, const void *error)
+        : TypeEraser(typeIndex)
+        , m_error(error)
+    {
+    }
+
+    const void *rawPointer() const
+    {
+        return m_error;
+    }
+
+private:
+    const void *m_error;
+};
+
+class ContextNtBase;
+
+class ErrorHandlerNtBase
+        : public TypeEraser
+{
+    using TypeEraser::TypeEraser;
 
 public:
-    bool isReady() const noexcept
+    virtual ~ErrorHandlerNtBase() noexcept;
+    virtual void acceptError(ContextNtBase *ctx, const void *error) = 0;
+
+    void acceptError(ContextNtBase *ctx, const StoredErrorNtBase *error)
+    {
+        acceptError(ctx, error->rawPointer());
+    }
+};
+
+class ContextNtBase
+        : private UniqueInstance
+{
+public:
+    bool isReady() const
     {
         return m_isValueSet;
     }
 
-    void setValue() noexcept;
-    void makeShadowOf(ContextNtBase *next) noexcept;
+    void setValue();
+    void makeShadowOf(ContextNtBase *next);
 
 protected:
-    ContextNtBase() noexcept;
-    virtual ~ContextNtBase() noexcept;
-    void setTarget(ContextNtBase *next) noexcept;
+    ContextNtBase();
+    virtual ~ContextNtBase();
+    void setTarget(ContextNtBase *next);
+    void addErrorHandler(std::unique_ptr<ErrorHandlerNtBase> &&errorHandler);
+    void storeError(std::unique_ptr<StoredErrorNtBase> &&error);
 
 private:
-    void fulfil() noexcept;
-    virtual void acceptInput() noexcept = 0;
+    void fulfil();
+    virtual void acceptInput() = 0;
 
 protected:
     ContextNtBase *m_prev;
     ContextNtBase *m_next;
     bool m_isValueSet;
     bool m_isShadowed;
+
+private: // error handling
+    std::unique_ptr<StoredErrorNtBase> m_storedError;
+    std::vector<std::unique_ptr<ErrorHandlerNtBase>> m_errorHandlers;
 };
 
 /*******************************************************************************
  * Base classes for errors and requests.
  */
 
-class ErrorHandlerNtBase
+template<typename tErrorType>
+class StoredError final
+        : public StoredErrorNtBase
 {
 public:
-    virtual ~ErrorHandlerNtBase() noexcept;
-
-public:
-    template<typename tErrorType>
-    bool handlesType() const
-    {
-        return m_index == typeid(tErrorType);
-    }
-
-    virtual void acceptError(const void *error, void *ctx) noexcept = 0;
-
-protected:
-    ErrorHandlerNtBase(const std::type_index &index)
-        : m_index(index)
+    StoredError(tErrorType &&error)
+        : StoredErrorNtBase(typeid(tErrorType),
+                            reinterpret_cast<const void*>(&m_error))
+        , m_error(std::forward<tErrorType>(error))
     {
     }
 
-protected:
-    std::type_index m_index;
+private:
+    std::remove_reference_t<tErrorType> m_error;
 };
 
 template<typename tValueType>
@@ -145,16 +162,17 @@ public:
     {
     }
 
-    void acceptError(const void *error, void *ctx) noexcept override
+    void acceptError(ContextNtBase *ctx, const void *error) override
     {
-        acceptError(*reinterpret_cast<const ErrorType*>(error), reinterpret_cast<ContextType*>(ctx));
+        acceptError(static_cast<ContextType*>(ctx),
+                    *reinterpret_cast<const ErrorType*>(error));
     }
 
 private:
     template<typename xValueType = tValueType>
     void acceptError(typename std::enable_if_t<std::is_same<xValueType, void>::value,
-                                               const ErrorType> &error,
-                     ContextType *ctx)
+                                               ContextType> *ctx,
+                     const ErrorType &error)
     {
         m_f(error);
         ctx->setValue();
@@ -162,8 +180,8 @@ private:
 
     template<typename xValueType = tValueType>
     void acceptError(typename std::enable_if_t<!std::is_same<xValueType, void>::value,
-                                               const ErrorType> &error,
-                     ContextType *ctx)
+                                               ContextType> *ctx,
+                     const ErrorType &error)
     {
         ctx->setValue(m_f(error));
     }
@@ -183,10 +201,12 @@ class ContextValueBase
 public:
     ~ContextValueBase()
     {
+#if 0
         if ( m_isValueSet )
         {
             // TODO: call m_value's destructor
         }
+#endif
     }
 
     const ValueType &value() const noexcept
@@ -253,28 +273,18 @@ public:
     void onError(tFunc &&f)
     {
         /* Constraints for a provided callable are checked inside ErrorHandler */
-        m_errorHandlers.emplace_back(
-                    new ErrorHandler<tValueType, tFunc>(std::forward<tFunc>(f)));
+        this->addErrorHandler(std::unique_ptr<ErrorHandlerNtBase>(
+                                  new ErrorHandler<tValueType, tFunc>(std::forward<tFunc>(f))));
     }
 
     template<typename tErrorType>
-    void setError(const tErrorType &error)
+    void setError(tErrorType &&error)
     {
         DLOG(">> setError");
-        for ( const auto &errorHandler : m_errorHandlers )
-        {
-            if ( errorHandler->template handlesType<tErrorType>() )
-            {
-                errorHandler->acceptError(reinterpret_cast<const void*>(&error),
-                                          reinterpret_cast<void*>(this));
-                break;
-            }
-        }
+        this->storeError(std::unique_ptr<StoredErrorNtBase>(
+                             new StoredError<tErrorType>(std::forward<tErrorType>(error))));
         DLOG("<< setError");
     }
-
-private:
-    std::vector<std::unique_ptr<ErrorHandlerNtBase>> m_errorHandlers;
 };
 
 /*******************************************************************************
@@ -436,6 +446,12 @@ public:
     FutureBase(ContextType *ctx)
         : m_ctx(ctx)
     {
+    }
+
+    FutureBase(FutureBase &&other)
+        : m_ctx(other.m_ctx)
+    {
+        other.m_ctx = nullptr;
     }
 
     [[ gnu::warn_unused_result ]]

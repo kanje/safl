@@ -263,7 +263,7 @@ TEST_F(SaflTest, basicOnError)
 TEST_F(SaflTest, onErrorWithVoidFuture)
 {
     Promise<void> p;
-    Future <void> f = p.future();
+    Future<void> f = p.future();
 
     int calledWithInt = 0;
     f.onError([&](int error)
@@ -274,6 +274,36 @@ TEST_F(SaflTest, onErrorWithVoidFuture)
     p.setError(99);
     ASSERT_TRUE(f.isReady());
     EXPECT_EQ(99, calledWithInt);
+}
+
+TEST_F(SaflTest, setErrorBeforeOnError)
+{
+    Promise<int> p;
+    Future<int> f = p.future();
+
+    f.onError([](double)
+    {
+        std::abort();
+        return 99;
+    });
+
+    p.setError(MyInt(42));
+
+    f.onError([](int)
+    {
+        std::abort();
+        return 5;
+    });
+
+    int calledWithInt = 0;
+    f.onError([&](const MyInt &error)
+    {
+        calledWithInt = error.value();
+        return 10;
+    });
+    ASSERT_TRUE(f.isReady());
+    EXPECT_EQ(42, calledWithInt);
+    EXPECT_EQ(10, f.value());
 }
 
 /*******************************************************************************
