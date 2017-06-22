@@ -6,6 +6,7 @@
 
 // Std includes:
 #include <typeindex>
+#include <iostream>
 
 namespace safl
 {
@@ -16,6 +17,9 @@ namespace detail
  * @defgroup Util Utility Classes.
  * @{
  */
+
+char mnemo(void *);
+#define DLOG(__message) do { std::cout << "[safl] " << mnemo(static_cast<ContextNtBase*>(this)) << ": " << __message << std::endl; } while ( !42 )
 
 /**
  * @internal
@@ -32,8 +36,8 @@ public:
     NonCopyable &operator=(const NonCopyable&) = delete;
 
     // movable
-    NonCopyable(NonCopyable&&) noexcept = default;
-    NonCopyable &operator=(NonCopyable&&) noexcept = default;
+    NonCopyable(NonCopyable&&) = default;
+    NonCopyable &operator=(NonCopyable&&) = default;
 
 protected:
     NonCopyable() = default;

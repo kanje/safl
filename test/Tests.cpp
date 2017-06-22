@@ -11,6 +11,7 @@
 // Std includes:
 #include <queue>
 #include <map>
+#include <functional>
 
 #define EXPECT_FUTURE_FULFILLED() EXPECT_TRUE(processSingle())
 #define EXPECT_NO_FULFILLED_FUTURES() EXPECT_EQ(0, queueSize())
@@ -59,6 +60,11 @@ public:
     explicit MyInt(int value)
         : m_value(value)
     {
+    }
+
+    ~MyInt()
+    {
+        m_value = 0xbaadf00d;
     }
 
     bool operator==(int value) const
@@ -160,6 +166,29 @@ TEST_F(SaflTest, valueThenLambda)
     EXPECT_FUTURE_FULFILLED();
     EXPECT_EQ(42, calledWith);
     EXPECT_TRUE(secondLambdaCalled);
+}
+
+TEST_F(SaflTest, lvalueLambda)
+{
+    Promise<int> p;
+    auto f = p.future();
+
+    int calledWith = 0;
+
+    {
+        /* f.then() must make a copy of this lambda because it will be destroyed
+         * when we leave the scope and the multiplier will not be valid any more. */
+        auto lambda = [&calledWith, multiplier = std::make_shared<MyInt>(2)](int value)
+        {
+            calledWith = value * multiplier->value();
+        };
+        f.then(lambda);
+    }
+
+    p.setValue(21);
+
+    EXPECT_FUTURE_FULFILLED();
+    EXPECT_EQ(42, calledWith);
 }
 
 int divideByTwo(int value)

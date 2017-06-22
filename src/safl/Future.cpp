@@ -9,7 +9,7 @@
 #include <cassert>
 #include <map>
 
-char mnemo(void *p)
+char safl::detail::mnemo(void *p)
 {
     static std::map<void*, char> s_map;
     static char s_next = 'A';
@@ -120,8 +120,4 @@ void ContextNtBase::storeError(std::unique_ptr<StoredErrorNtBase> &&error)
             break;
         }
     }
-}
-
-ErrorHandlerNtBase::~ErrorHandlerNtBase() noexcept
-{
 }
