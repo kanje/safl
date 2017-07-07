@@ -14,7 +14,8 @@ namespace detail
 {
 
 /**
- * @defgroup Util Utility Classes.
+ * @internal
+ * @defgroup Util Utility Classes
  * @{
  */
 

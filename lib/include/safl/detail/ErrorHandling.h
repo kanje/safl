@@ -19,6 +19,7 @@ template<typename tValueType>
 class ContextBase;
 
 /**
+ * @internal
  * @defgroup ErrorHandling Error Handling
  * @{
  */

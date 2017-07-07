@@ -3,7 +3,7 @@
 #
 
 cmake_minimum_required(VERSION 3.3)
-project(SAFL CXX)
+project(SAFL VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 14)
 add_compile_options(
@@ -16,38 +16,15 @@ add_compile_options(
     -Wold-style-cast
 )
 
-# library:
-set(TARGET safl)
-
-add_library(${TARGET}
-    include/safl/detail/FunctionTraits.h
-    include/safl/detail/FutureDetail.h
-    include/safl/detail/Utils.h
-    include/safl/detail/ErrorHandling.h
-    include/safl/detail/Context.h
-    include/safl/Future.h
-    include/safl/ToFuture.h
-    src/safl/Future.cpp
-)
-target_include_directories(${TARGET}
-  PUBLIC
-    include
-)
-
-# unit tests:
 enable_testing()
-set(TEST_TARGET ut-${TARGET})
 
-add_executable(${TEST_TARGET}
-    test/Tests.cpp
-)
-target_link_libraries(${TEST_TARGET}
-  PRIVATE
-    gtest_main
-    gtest
-    safl
-)
-add_test(SaflTest ${TEST_TARGET})
+add_subdirectory(doc)
+add_subdirectory(lib)
+add_subdirectory(test)
 
 # add these files to IDE:
-add_custom_target(readme_txt SOURCES README.md)
+add_custom_target(extra_files
+  SOURCES
+    README.md
+    LICENSE
+)
