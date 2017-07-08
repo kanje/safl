@@ -1,5 +1,5 @@
 #
-# This file is a part of Standalone Future Library (safl).
+# This file is a part of Stand-alone Future Library (safl).
 #
 
 find_package(Doxygen)
@@ -16,13 +16,14 @@ if(NOT QHELPGENERATOR_EXECUTABLE)
     unset(QHELPGENERATOR_EXECUTABLE CACHE)
 endif()
 
-
 configure_file(Doxyfile.in Doxyfile @ONLY)
 add_custom_target(doc
   COMMAND
     ${DOXYGEN_EXECUTABLE} Doxyfile
   WORKING_DIRECTORY
     ${CMAKE_CURRENT_BINARY_DIR}
+  SOURCES
+    pages/MainPage.dox
   COMMENT
     "Generating SAFL documentation"
   VERBATIM

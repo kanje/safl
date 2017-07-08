@@ -1,6 +1,7 @@
-# Safl
-**S**tand-**a**lone **F**uture **L**ibrary is a C++ library which provides builing
-blocks for developing an asynchronous software using the Future/Promise pattern.
+# SAFL
+<b>S</b>tand-<b>a</b>lone <b>F</b>uture <b>L</b>ibrary is a C++ library which
+provides builing blocks for developing an asynchronous software using the
+Future/Promise pattern.
 
 ## Background
 A concept behind the library is inspired by <a href="https://github.com/facebook/folly

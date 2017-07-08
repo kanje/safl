@@ -1,5 +1,5 @@
 #
-# This file is a part of Standalone Future Library (safl).
+# This file is a part of Stand-alone Future Library (safl).
 #
 
 cmake_minimum_required(VERSION 3.3)
