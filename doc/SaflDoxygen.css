@@ -1,0 +1,30 @@
+/*
+ * This file is a part of Stand-alone Future Library (safl).
+ */
+
+body {
+    color: #222;
+}
+
+h1 {
+    font-size: 20px;
+}
+
+h2 {
+    font-size: 16px;
+}
+
+/* @code */
+div.line {
+    line-height: 1.25;
+}
+div.fragment {
+    border-radius: 5px;
+}
+
+/* @c */
+code {
+    background: #fbfcfd;
+    border: 1px solid #c4cfe5;
+    border-radius: 5px;
+}

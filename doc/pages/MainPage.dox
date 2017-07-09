@@ -5,14 +5,16 @@
 /**
  * @mainpage
  *
- * <b>S</b>tand-<b>a</b>lone <b>F</b>uture <b>L</b>ibrary is a C++ library which
- * provides builing blocks for developing an asynchronous software using the
- * Future/Promise pattern.
+ * Welcome to the Doxygen documentation of SAFL.
  *
  * @internal
  * @note This documentation includes internal details and is intended for library
- *       developers.
+ *       developers. If you want to include only the documentation for library
+ *       users, please configure the project with @c SAFL_DEVELOPER=OFF.
  * @endinternal
  *
- * - @subpage md_README "README.md"
+ * For a short introduction please refer to @subpage md_README "README.md".
+ *
+ * This manual consists of these sections:
+ * - @subpage Specs
  */

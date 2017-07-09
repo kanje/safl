@@ -10,6 +10,9 @@
 namespace safl
 {
 
+/**
+ * @brief The Future.
+ */
 template<typename ValueType>
 class Future final
         : public detail::FutureBase<ValueType>
@@ -30,6 +33,9 @@ class Future<void>
     using FutureBase<void>::FutureBase;
 };
 
+/**
+ * @brief The Promise.
+ */
 template<typename ValueType>
 class Promise final
         : public detail::PromiseBase<ValueType>
