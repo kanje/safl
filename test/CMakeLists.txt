@@ -2,15 +2,21 @@
 # This file is a part of Stand-alone Future Library (safl).
 #
 
-set(TEST_TARGET ut-safl)
+find_package(GTest REQUIRED)
+find_package(Threads REQUIRED)
 
+set(TEST_TARGET ut-safl)
 add_executable(${TEST_TARGET}
     src/Tests.cpp
 )
+target_include_directories(${TEST_TARGET}
+  PRIVATE
+    ${GTEST_INCLUDE_DIRS}
+)
 target_link_libraries(${TEST_TARGET}
   PRIVATE
-    gtest_main
-    gtest
+    ${GTEST_BOTH_LIBRARIES}
+    Threads::Threads
     safl
 )
-add_test(SaflTest ${TEST_TARGET})
+GTEST_ADD_TESTS(${TEST_TARGET} "" AUTO)
