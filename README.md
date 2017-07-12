@@ -3,6 +3,8 @@
 provides builing blocks for developing an asynchronous software using the
 Future/Promise pattern.
 
+<b>The library is under development. It is not yet usable for a production code.</b>
+
 ## Background
 A concept behind the library is inspired by <a href="https://github.com/facebook/folly
 /tree/master/folly/futures">Folly Futures</a>. But, in contrast to it, _safl_ is

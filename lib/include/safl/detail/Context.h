@@ -48,11 +48,13 @@ protected:
     ContextNtBase();
     virtual ~ContextNtBase();
     void setTarget(ContextNtBase *next);
-    void addErrorHandler(std::unique_ptr<ErrorHandlerNtBase> &&errorHandler);
     void storeError(std::unique_ptr<StoredErrorNtBase> &&error);
+    void addErrorHandler(std::unique_ptr<ErrorHandlerNtBase> &&errorHandler);
+
 
 private:
     void fulfil();
+    bool tryErrorHandler(ErrorHandlerNtBase *errorHandler);
     virtual void acceptInput() = 0;
 
 protected:

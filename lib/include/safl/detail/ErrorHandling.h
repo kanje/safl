@@ -26,7 +26,7 @@ class ContextBase;
 
 /**
  * @internal
- * @brief The non-templated class for stored errors.
+ * @brief The non-templated base class for stored errors.
  */
 class StoredErrorNtBase
         : public TypeEraser
@@ -65,7 +65,7 @@ private:
 
 /**
  * @internal
- * @brief The non-templated base for error handlers.
+ * @brief The non-templated base class for error handlers.
  */
 class ErrorHandlerNtBase
         : public TypeEraser
@@ -76,13 +76,7 @@ public:
     virtual ~ErrorHandlerNtBase() = default;
 
 public:
-    void acceptError(ContextNtBase *ctx, const StoredErrorNtBase *error)
-    {
-        privateAcceptError(ctx, error->data());
-    }
-
-private:
-    virtual void privateAcceptError(ContextNtBase *ctx, const void *error) = 0;
+    virtual void acceptError(ContextNtBase *ctx, const StoredErrorNtBase *error) = 0;
 };
 
 template<typename tValueType, typename tFunc>
@@ -105,26 +99,27 @@ public:
     {
     }
 
-private:
-    void privateAcceptError(ContextNtBase *ctx, const void *error) override
+public:
+    void acceptError(ContextNtBase *ctx, const StoredErrorNtBase *error) override
     {
-        acceptErrorImpl(static_cast<ContextType*>(ctx),
-                        *reinterpret_cast<const ErrorType*>(error));
+        acceptError(static_cast<ContextType*>(ctx),
+                    *reinterpret_cast<const ErrorType*>(error->data()));
     }
 
+private:
     template<typename xValueType = tValueType>
-    void acceptErrorImpl(typename std::enable_if_t<std::is_same<xValueType, void>::value,
-                                                   ContextType> *ctx,
-                         const ErrorType &error)
+    void acceptError(typename std::enable_if_t<std::is_same<xValueType, void>::value,
+                                               ContextType> *ctx,
+                     const ErrorType &error)
     {
         m_f(error);
         ctx->setValue();
     }
 
     template<typename xValueType = tValueType>
-    void acceptErrorImpl(typename std::enable_if_t<!std::is_same<xValueType, void>::value,
-                                                   ContextType> *ctx,
-                         const ErrorType &error)
+    void acceptError(typename std::enable_if_t<!std::is_same<xValueType, void>::value,
+                                               ContextType> *ctx,
+                     const ErrorType &error)
     {
         ctx->setValue(m_f(error));
     }

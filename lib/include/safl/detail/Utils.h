@@ -7,6 +7,7 @@
 // Std includes:
 #include <typeindex>
 #include <iostream>
+#include <memory>
 
 namespace safl
 {
@@ -64,16 +65,15 @@ protected:
     ~UniqueInstance() = default;
 };
 
+/**
+ * @internal
+ * @brief The base for classes which operate on or store an erased type.
+ */
 class TypeEraser
 {
 public:
     template<typename tType>
-    bool isType() const
-    {
-        return m_typeIndex == typeid(tType);
-    }
-
-    bool isType(const TypeEraser *other) const
+    bool isType(const std::unique_ptr<tType> &other) const
     {
         return m_typeIndex == other->m_typeIndex;
     }

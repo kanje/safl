@@ -113,6 +113,7 @@ public:
     void setError(tErrorType &&error) noexcept
     {
         m_ctx->setError(std::forward<tErrorType>(error));
+        m_ctx = nullptr;
     }
 
 protected:
@@ -131,24 +132,6 @@ protected:
 
 protected:
     ContextType *m_ctx;
-};
-
-/*******************************************************************************
- * Executor.
- */
-
-class Executor
-{
-public:
-    using ContextType = ContextNtBase;
-    using FunctionType = void(*)(ContextNtBase*);
-
-public:
-    static void set(Executor *executor) noexcept;
-    virtual void invoke(ContextType *ctx, FunctionType f) noexcept = 0;
-
-protected:
-    ~Executor() noexcept = default;
 };
 
 } // namespace detail

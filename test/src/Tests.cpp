@@ -4,6 +4,7 @@
 
 // Code to test:
 #include <safl/Future.h>
+#include <safl/detail/Executor.h>
 
 // Testing:
 #include <gtest/gtest.h>
@@ -22,9 +23,9 @@ class TestExecutor final
         : public detail::Executor
 {
 public:
-    void invoke(ContextType *ctx, FunctionType f) noexcept
+    void invoke(FunctionType f) noexcept
     {
-        m_queue.push(std::make_pair(ctx, f));
+        m_queue.push(f);
     }
 
     bool processSingle()
@@ -40,9 +41,9 @@ public:
 
     void processNext()
     {
-        auto item = m_queue.front();
+        auto f = m_queue.front();
         m_queue.pop();
-        item.second(item.first);
+        f();
     }
 
     std::size_t queueSize() const
@@ -51,7 +52,7 @@ public:
     }
 
 private:
-    std::queue<std::pair<ContextType*, FunctionType>> m_queue;
+    std::queue<FunctionType> m_queue;
 };
 
 class MyInt final
@@ -283,6 +284,7 @@ TEST_F(SaflTest, basicOnError)
     });
 
     p.setError(std::string("hello, world"));
+    EXPECT_FUTURE_FULFILLED();
     ASSERT_TRUE(f.isReady());
     EXPECT_DOUBLE_EQ(7.6, f.value());
     EXPECT_EQ(0, calledWithInt);
@@ -301,6 +303,7 @@ TEST_F(SaflTest, onErrorWithVoidFuture)
     });
 
     p.setError(99);
+    EXPECT_FUTURE_FULFILLED();
     ASSERT_TRUE(f.isReady());
     EXPECT_EQ(99, calledWithInt);
 }
@@ -317,12 +320,14 @@ TEST_F(SaflTest, setErrorBeforeOnError)
     });
 
     p.setError(MyInt(42));
+    EXPECT_NO_FULFILLED_FUTURES();
 
     f.onError([](int)
     {
         std::abort();
         return 5;
     });
+    EXPECT_NO_FULFILLED_FUTURES();
 
     int calledWithInt = 0;
     f.onError([&](const MyInt &error)
@@ -330,9 +335,42 @@ TEST_F(SaflTest, setErrorBeforeOnError)
         calledWithInt = error.value();
         return 10;
     });
+    EXPECT_FUTURE_FULFILLED();
     ASSERT_TRUE(f.isReady());
     EXPECT_EQ(42, calledWithInt);
     EXPECT_EQ(10, f.value());
+}
+
+TEST_F(SaflTest, errorWithMultipleFutures)
+{
+    Promise<int> p;
+    Future<int> f1 = p.future();
+
+    f1.onError([](int)
+    {
+        std::abort();
+        return 5;
+    });
+
+    Future<int> f2 = f1.then([](int)
+    {
+        return 42;
+    });
+
+    int calledWithInt = 0;
+    f2.onError([&](const MyInt &error)
+    {
+        calledWithInt = error.value();
+        return 99;
+    });
+
+    EXPECT_NO_FULFILLED_FUTURES();
+
+    p.setError(MyInt(1022));
+    EXPECT_FUTURE_FULFILLED();
+    EXPECT_TRUE(f2.isReady());
+    EXPECT_EQ(1022, calledWithInt);
+    EXPECT_EQ(99, f2.value());
 }
 
 /*******************************************************************************

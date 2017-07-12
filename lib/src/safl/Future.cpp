@@ -5,6 +5,9 @@
 // Self-include:
 #include <safl/Future.h>
 
+// Local includes:
+#include <safl/detail/Executor.h>
+
 // Std includes:
 #include <cassert>
 #include <map>
@@ -47,7 +50,7 @@ ContextNtBase::~ContextNtBase()
 
 void ContextNtBase::setValue()
 {
-    assert(m_isValueSet == false);
+    assert(!m_isValueSet);
     m_isValueSet = true;
     if ( m_next )
     {
@@ -78,46 +81,64 @@ void ContextNtBase::fulfil()
     DLOG("fulfil");
     assert(s_executor != nullptr);
 
-    auto doFulfil = [](ContextNtBase *self)
+    auto doFulfil = [this]()
     {
-        self->m_next->acceptInput();
-        self->m_next->m_prev = nullptr;
+        m_next->acceptInput();
+        m_next->m_prev = nullptr;
     };
 
     if ( m_isShadowed )
     {
-        doFulfil(this);
+        doFulfil();
     }
     else
     {
-        s_executor->invoke(this, doFulfil);
-    }
-}
-
-void ContextNtBase::addErrorHandler(std::unique_ptr<ErrorHandlerNtBase> &&errorHandler)
-{
-    /* Maybe the new error handle can handle a stored error? */
-    if ( m_storedError && m_storedError->isType(errorHandler.get()) )
-    {
-        errorHandler->acceptError(this, m_storedError.get());
-    }
-    else
-    {
-        m_errorHandlers.push_back(std::move(errorHandler));
+        s_executor->invoke(std::move(doFulfil));
     }
 }
 
 void ContextNtBase::storeError(std::unique_ptr<StoredErrorNtBase> &&error)
 {
+    assert(!m_isValueSet);
     assert(!m_storedError);
     m_storedError = std::move(error);
 
+    /* Search for an appropriate error handler. */
     for ( const auto &errorHandler : m_errorHandlers )
     {
-        if ( errorHandler->isType(m_storedError.get()) )
+        if ( tryErrorHandler(errorHandler.get()) )
         {
-            errorHandler->acceptError(this, m_storedError.get());
-            break;
+            return;
         }
     }
+
+    /* If there is no error handler for this context, try the next one. */
+    if ( m_next )
+    {
+        m_next->storeError(std::move(m_storedError));
+    }
+}
+
+void ContextNtBase::addErrorHandler(std::unique_ptr<ErrorHandlerNtBase> &&errorHandler)
+{
+    m_errorHandlers.push_back(std::move(errorHandler));
+
+    /* Maybe the new error handle can handle a stored error? */
+    if ( m_storedError )
+    {
+        tryErrorHandler(m_errorHandlers.back().get());
+    }
+}
+
+bool ContextNtBase::tryErrorHandler(ErrorHandlerNtBase *errorHandler)
+{
+    if ( errorHandler->isType(m_storedError) )
+    {
+        s_executor->invoke([this, errorHandler]()
+        {
+            errorHandler->acceptError(this, m_storedError.get());
+        });
+        return true;
+    }
+    return false;
 }
