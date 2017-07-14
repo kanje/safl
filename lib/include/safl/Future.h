@@ -33,6 +33,8 @@ class Future<void>
     using FutureBase<void>::FutureBase;
 };
 
+using BrokePromise = detail::BrokenPromise;
+
 /**
  * @brief The Promise.
  */
@@ -60,27 +62,34 @@ public:
     }
 };
 
-template<typename ValueType>
+
+
+template<typename tValueType>
 class SharedPromise final
 {
 public:
     SharedPromise()
-        : m_p(std::make_shared<Promise<ValueType>>())
+        : m_p(std::make_shared<Promise<tValueType>>())
     {
     }
-    SharedPromise(const SharedPromise &) = default;
-    SharedPromise(SharedPromise &&) = default;
 
-    SharedPromise &operator=(const SharedPromise &) = default;
-    SharedPromise &operator=(SharedPromise &&) = default;
-
-    Promise<ValueType> *operator->() const noexcept
+    Promise<tValueType> *operator->() noexcept
     {
         return m_p.get();
     }
 
+    const Promise<tValueType> *operator->() const noexcept
+    {
+        return m_p.get();
+    }
+
+    void forget() noexcept
+    {
+        m_p.reset();
+    }
+
 private:
-    std::shared_ptr<Promise<ValueType>> m_p;
+    std::shared_ptr<Promise<tValueType>> m_p;
 };
 
 } // namespace safl

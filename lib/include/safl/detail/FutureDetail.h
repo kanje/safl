@@ -87,6 +87,8 @@ protected:
  * Base classes for Promise.
  */
 
+class BrokenPromise {};
+
 class PromiseNtBase
         : private NonCopyable
 {
@@ -126,7 +128,7 @@ protected:
     {
         if ( m_ctx )
         {
-            //setError(-1);
+            setError(BrokenPromise{});
         }
     }
 

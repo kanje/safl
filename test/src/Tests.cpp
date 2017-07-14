@@ -373,6 +373,23 @@ TEST_F(SaflTest, errorWithMultipleFutures)
     EXPECT_EQ(99, f2.value());
 }
 
+TEST_F(SaflTest, brokenPromise)
+{
+    bool isPromiseBroken = false;
+    SharedPromise<MyInt> p;
+
+    auto f = p->future();
+    f.onError([&](BrokePromise)
+    {
+        isPromiseBroken = true;
+        return MyInt(76);
+    });
+
+    p.forget();
+    EXPECT_FUTURE_FULFILLED();
+    EXPECT_TRUE(isPromiseBroken);
+}
+
 /*******************************************************************************
  * Sanity checks for function traits.
  */
