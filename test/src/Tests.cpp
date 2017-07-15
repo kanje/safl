@@ -23,9 +23,9 @@ class TestExecutor final
         : public detail::Executor
 {
 public:
-    void invoke(FunctionType f) noexcept
+    void invoke(detail::Invokable &&f) noexcept
     {
-        m_queue.push(f);
+        m_queue.push(std::move(f));
     }
 
     bool processSingle()
@@ -41,9 +41,9 @@ public:
 
     void processNext()
     {
-        auto f = m_queue.front();
+        auto f = std::move(m_queue.front());
         m_queue.pop();
-        f();
+        f.invoke();
     }
 
     std::size_t queueSize() const
@@ -52,7 +52,7 @@ public:
     }
 
 private:
-    std::queue<FunctionType> m_queue;
+    std::queue<detail::Invokable> m_queue;
 };
 
 class MyInt final

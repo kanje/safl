@@ -35,6 +35,9 @@ class AsyncNextContext;
 class ContextNtBase
         : private UniqueInstance
 {
+    using UniqueStoredError = std::unique_ptr<StoredErrorNtBase>;
+    using UniqueErrorHandler = std::unique_ptr<ErrorHandlerNtBase>;
+
 public:
     bool isReady() const
     {
@@ -48,13 +51,13 @@ protected:
     ContextNtBase();
     virtual ~ContextNtBase();
     void setTarget(ContextNtBase *next);
-    void storeError(std::unique_ptr<StoredErrorNtBase> &&error);
-    void addErrorHandler(std::unique_ptr<ErrorHandlerNtBase> &&errorHandler);
+    void storeError(UniqueStoredError &&error);
+    void addErrorHandler(UniqueErrorHandler &&handler);
 
 
 private:
     void fulfil();
-    bool tryErrorHandler(ErrorHandlerNtBase *errorHandler);
+    bool tryHandleError(UniqueStoredError &error, UniqueErrorHandler &handler);
     virtual void acceptInput() = 0;
 
 protected:
@@ -64,8 +67,8 @@ protected:
     bool m_isShadowed;
 
 private: // error handling
-    std::unique_ptr<StoredErrorNtBase> m_storedError;
-    std::vector<std::unique_ptr<ErrorHandlerNtBase>> m_errorHandlers;
+    UniqueStoredError m_storedError;
+    std::vector<UniqueErrorHandler> m_errorHandlers;
 };
 
 template<typename tValueType>

@@ -51,6 +51,7 @@ ContextNtBase::~ContextNtBase()
 void ContextNtBase::setValue()
 {
     assert(!m_isValueSet);
+    assert(!m_storedError);
     m_isValueSet = true;
     if ( m_next )
     {
@@ -60,6 +61,7 @@ void ContextNtBase::setValue()
 
 void ContextNtBase::makeShadowOf(ContextNtBase *next)
 {
+    assert(!m_isShadowed);
     m_isShadowed = true;
     setTarget(next);
 }
@@ -97,46 +99,53 @@ void ContextNtBase::fulfil()
     }
 }
 
-void ContextNtBase::storeError(std::unique_ptr<StoredErrorNtBase> &&error)
+void ContextNtBase::storeError(UniqueStoredError &&error)
 {
     assert(!m_isValueSet);
     assert(!m_storedError);
-    m_storedError = std::move(error);
 
     /* Search for an appropriate error handler. */
-    for ( const auto &errorHandler : m_errorHandlers )
+    for ( auto &handler : m_errorHandlers )
     {
-        if ( tryErrorHandler(errorHandler.get()) )
+        if ( tryHandleError(error, handler) )
         {
             return;
         }
     }
 
-    /* If there is no error handler for this context, try the next one. */
     if ( m_next )
     {
-        m_next->storeError(std::move(m_storedError));
+        /* If there is no error handler for this context, try the next one.
+         * This fulfills this context and it must be destroyed. */
+        m_next->storeError(std::move(error));
+        delete this;
+    }
+    else
+    {
+        m_storedError = std::move(error);
     }
 }
 
-void ContextNtBase::addErrorHandler(std::unique_ptr<ErrorHandlerNtBase> &&errorHandler)
+void ContextNtBase::addErrorHandler(UniqueErrorHandler &&handler)
 {
-    m_errorHandlers.push_back(std::move(errorHandler));
-
-    /* Maybe the new error handle can handle a stored error? */
+    /* Maybe the new error handler can handle a stored error? */
     if ( m_storedError )
     {
-        tryErrorHandler(m_errorHandlers.back().get());
+        tryHandleError(m_storedError, handler);
+    }
+    else
+    {
+        m_errorHandlers.push_back(std::move(handler));
     }
 }
 
-bool ContextNtBase::tryErrorHandler(ErrorHandlerNtBase *errorHandler)
+bool ContextNtBase::tryHandleError(UniqueStoredError &error, UniqueErrorHandler &handler)
 {
-    if ( errorHandler->isType(m_storedError) )
+    if ( handler->isType(error) )
     {
-        s_executor->invoke([this, errorHandler]()
+        s_executor->invoke([this, error = std::move(error), handler = std::move(handler)]()
         {
-            errorHandler->acceptError(this, m_storedError.get());
+            handler->acceptError(this, error.get());
         });
         return true;
     }
