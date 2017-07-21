@@ -10,20 +10,6 @@
 
 // Std includes:
 #include <cassert>
-#include <map>
-
-char safl::detail::mnemo(void *p)
-{
-    static std::map<void*, char> s_map;
-    static char s_next = 'A';
-    auto it = s_map.find(p);
-    if ( it != s_map.end() )
-    {
-        return it->second;
-    }
-    s_map[p] = s_next;
-    return s_next++;
-}
 
 using namespace safl::detail;
 
@@ -34,18 +20,52 @@ void Executor::set(Executor *executor) noexcept
     s_executor = executor;
 }
 
+#ifdef SAFL_DEVELOPER
+static unsigned s_nextAlias = 0;
+static std::size_t s_cntContexts = 0;
+
+std::size_t ContextNtBase::cntContexts()
+{
+    return s_cntContexts;
+}
+#endif
+
 ContextNtBase::ContextNtBase()
     : m_prev(nullptr)
     , m_next(nullptr)
     , m_isValueSet(false)
-    , m_isShadowed(false)
+    , m_isShadow(false)
+    , m_hasFuture(false)
+    , m_hasPromise(false)
+#ifdef SAFL_DEVELOPER
+    , m_alias(s_nextAlias++)
+#endif
 {
+#ifdef SAFL_DEVELOPER
     DLOG("new");
+    s_cntContexts++;
+#endif
 }
 
 ContextNtBase::~ContextNtBase()
 {
+#ifdef SAFL_DEVELOPER
+    s_cntContexts--;
     DLOG("delete");
+#endif
+}
+
+bool ContextNtBase::isReady() const
+{
+    return m_isValueSet || m_storedError;
+}
+
+bool ContextNtBase::isFulfillable() const
+{
+    /* The context is fulfillable if both a result can be achieved (e.g. a value
+     * can be set by a previous context or a Promise), and the result can be used
+     * (i.e. it can be propagated to the next context or accessed via a Future). */
+    return (m_hasPromise || m_prev) && (m_hasFuture || m_next);
 }
 
 void ContextNtBase::setValue()
@@ -61,20 +81,69 @@ void ContextNtBase::setValue()
 
 void ContextNtBase::makeShadowOf(ContextNtBase *next)
 {
-    assert(!m_isShadowed);
-    m_isShadowed = true;
+    DLOG("makeShadowOf: " << next->alias());
+    assert(!m_isShadow);
+    assert(m_hasFuture);
+    assert(next->m_prev);
+    m_isShadow = true;
+    m_hasFuture = false;
+    next->m_prev->unsetTarget();
     setTarget(next);
+}
+
+void ContextNtBase::attachPromise()
+{
+    DLOG("attachPromise");
+    assert(!m_hasPromise);
+    m_hasPromise = true;
+}
+
+void ContextNtBase::detachPromise()
+{
+    DLOG("detachPromise");
+    assert(m_hasPromise);
+    m_hasPromise = false;
+    tryDestroy();
+}
+
+void ContextNtBase::attachFuture()
+{
+    DLOG("attachFuture");
+    assert(!m_hasFuture);
+    m_hasFuture = true;
+}
+
+void ContextNtBase::detachFuture()
+{
+    DLOG("detachFuture");
+    assert(m_hasFuture);
+    m_hasFuture = false;
+    tryDestroy();
 }
 
 void ContextNtBase::setTarget(ContextNtBase *next)
 {
-    DLOG("setTarget: " << mnemo(next));
-    assert(m_next == nullptr);
+    DLOG("setTarget: " << next->alias());
+    assert(!m_next);
+    assert(!next->m_prev);
     m_next = next;
     m_next->m_prev = this;
     if ( m_isValueSet )
     {
         fulfil();
+    }
+}
+
+void ContextNtBase::unsetTarget()
+{
+    if ( m_next )
+    {
+        DLOG("unsetTarget: " << m_next->alias());
+        assert(m_next->m_prev == this);
+        m_next->m_prev = nullptr;
+        m_next->tryDestroy();
+        m_next = nullptr;
+        tryDestroy();
     }
 }
 
@@ -85,11 +154,16 @@ void ContextNtBase::fulfil()
 
     auto doFulfil = [this]()
     {
+        /* m_next will not be deleted by acceptInput() because m_next->m_prev
+         * is not null, so it is safe to operate on it. */
         m_next->acceptInput();
-        m_next->m_prev = nullptr;
+
+        /* This disconnects this and the next contexts. One or both of them might
+         * be destroyed in process. */
+        unsetTarget();
     };
 
-    if ( m_isShadowed )
+    if ( m_isShadow )
     {
         doFulfil();
     }
@@ -116,9 +190,16 @@ void ContextNtBase::storeError(UniqueStoredError &&error)
     if ( m_next )
     {
         /* If there is no error handler for this context, try the next one.
-         * This fulfills this context and it must be destroyed. */
+         * The next context is not destroyed, because m_next->m_prev is not null. */
         m_next->storeError(std::move(error));
-        delete this;
+
+        /* Mark this context as fulfilled. This will make isReady() return a valid
+         * value and prevent reporting a broken promise. */
+        m_isValueSet = true;
+
+        /* This disconnects this and the next contexts. One or both of them might
+         * be destroyed in process. */
+        unsetTarget();
     }
     else
     {
@@ -150,4 +231,12 @@ bool ContextNtBase::tryHandleError(UniqueStoredError &error, UniqueErrorHandler 
         return true;
     }
     return false;
+}
+
+void ContextNtBase::tryDestroy()
+{
+    if ( !(m_hasPromise || m_hasFuture || m_prev || m_next) )
+    {
+        delete this;
+    }
 }

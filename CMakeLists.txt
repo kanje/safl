@@ -16,6 +16,8 @@ add_compile_options(
     -Wold-style-cast
 )
 
+option(SAFL_DEVELOPER "Enable the developer mode" ON)
+
 enable_testing()
 
 add_subdirectory(doc)

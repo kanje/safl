@@ -28,23 +28,21 @@ class InvokableNtBase
 {
 public:
     virtual ~InvokableNtBase() = default;
-    virtual void invokex() = 0;
+    virtual void invoke() = 0;
 };
 
 template<typename tFunc>
-class xInvokable
+class Invokable
         : public InvokableNtBase
 {
 public:
-    explicit xInvokable(tFunc &&f)
+    explicit Invokable(tFunc &&f)
         : m_f(std::forward<tFunc>(f))
     {
-        static_assert(!std::is_same<tFunc, Invokable&>::value, "bbb");
     }
 
-    void invokex() override
+    void invoke() override
     {
-        static_assert(!std::is_same<tFunc, Invokable&>::value, "aaa");
         m_f();
     }
 
@@ -59,14 +57,14 @@ class Invokable
 public:
     template<typename tFunc>
     explicit Invokable(tFunc &&f)
-        : m_f(new detail::xInvokable<tFunc>(std::forward<tFunc>(f)))
+        : m_f(new detail::Invokable<tFunc>(std::forward<tFunc>(f)))
     {
         static_assert(!std::is_same<tFunc, Invokable&>::value, "ccc");
     }
 
     void invoke()
     {
-        m_f->invokex();
+        m_f->invoke();
     }
 
 private:

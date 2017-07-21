@@ -2,8 +2,6 @@
 # This file is a part of Stand-alone Future Library (safl).
 #
 
-option(SAFL_DEVELOPER "Enable the developer mode" ON)
-
 find_package(Doxygen)
 if(NOT DOXYGEN_FOUND)
     return()

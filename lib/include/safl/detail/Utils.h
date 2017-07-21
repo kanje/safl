@@ -20,9 +20,6 @@ namespace detail
  * @{
  */
 
-char mnemo(void *);
-#define DLOG(__message) do { std::cout << "[safl] " << mnemo(static_cast<ContextNtBase*>(this)) << ": " << __message << std::endl; } while ( !42 )
-
 /**
  * @internal
  * @brief The base class for non-copyable but movable classes.

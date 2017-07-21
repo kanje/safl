@@ -38,15 +38,14 @@ using BrokePromise = detail::BrokenPromise;
 /**
  * @brief The Promise.
  */
-template<typename ValueType>
+template<typename tValueType>
 class Promise final
-        : public detail::PromiseBase<ValueType>
+        : public detail::PromiseBase<tValueType>
 {
 public:
-    void setValue(const ValueType &value) noexcept
+    void setValue(const tValueType &value) noexcept
     {
         this->m_ctx->setValue(value);
-        this->m_ctx = nullptr;
     }
 };
 
@@ -58,7 +57,6 @@ public:
     void setValue() noexcept
     {
         this->m_ctx->setValue();
-        this->m_ctx = nullptr;
     }
 };
 

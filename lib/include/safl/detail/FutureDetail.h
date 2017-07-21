@@ -60,12 +60,21 @@ public:
     FutureBase(ContextType *ctx)
         : m_ctx(ctx)
     {
+        m_ctx->attachFuture();
     }
 
     FutureBase(FutureBase &&other)
         : m_ctx(other.m_ctx)
     {
         other.m_ctx = nullptr;
+    }
+
+    ~FutureBase()
+    {
+        if ( m_ctx )
+        {
+            m_ctx->detachFuture();
+        }
     }
 
     [[ gnu::warn_unused_result ]]
@@ -76,8 +85,6 @@ public:
         m_ctx = nullptr;
         return tmp;
     }
-
-    void detach() noexcept;
 
 protected:
     ContextType *m_ctx;
@@ -115,20 +122,24 @@ public:
     void setError(tErrorType &&error) noexcept
     {
         m_ctx->setError(std::forward<tErrorType>(error));
-        m_ctx = nullptr;
     }
 
 protected:
     PromiseBase() noexcept
         : m_ctx(new InitialContext<tValueType>())
     {
+        m_ctx->attachPromise();
     }
 
     ~PromiseBase() noexcept
     {
         if ( m_ctx )
         {
-            setError(BrokenPromise{});
+            if ( m_ctx->isFulfillable() && !m_ctx->isReady() )
+            {
+                setError(BrokenPromise{});
+            }
+            m_ctx->detachPromise();
         }
     }
 

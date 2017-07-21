@@ -99,6 +99,11 @@ public:
     void TearDown() override
     {
         EXPECT_NO_FULFILLED_FUTURES();
+
+#ifdef SAFL_DEVELOPER
+        /* Simple test for memory leaks. */
+        ASSERT_EQ(0, detail::ContextNtBase::cntContexts());
+#endif
     }
 
     bool processSingle()
@@ -138,6 +143,12 @@ TEST_F(SaflTest, canCreatePromisePod)
 TEST_F(SaflTest, canCreatePromiseNoDefaultCtor)
 {
     Promise<MyInt> p;
+}
+
+TEST_F(SaflTest, fulfilledPromiseWithoutFuture)
+{
+    Promise<int> p;
+    p.setValue(32);
 }
 
 TEST_F(SaflTest, valueThenLambda)

@@ -11,6 +11,14 @@
 #include <memory>
 #include <vector>
 
+#ifdef SAFL_DEVELOPER
+#define DLOG(__message) do {                                                   \
+    std::cout << "[safl] " << this->alias() << ": " << __message << std::endl; \
+} while ( !42 )
+#else
+#define DLOG(__message) do { /* no-op */ } while ( !42 )
+#endif
+
 namespace safl
 {
 
@@ -39,13 +47,22 @@ class ContextNtBase
     using UniqueErrorHandler = std::unique_ptr<ErrorHandlerNtBase>;
 
 public:
-    bool isReady() const
-    {
-        return m_isValueSet;
-    }
-
+    bool isReady() const;
+    bool isFulfillable() const;
     void setValue();
     void makeShadowOf(ContextNtBase *next);
+    void attachPromise();
+    void detachPromise();
+    void attachFuture();
+    void detachFuture();
+
+#ifdef SAFL_DEVELOPER
+    unsigned alias() const
+    {
+        return m_alias;
+    }
+    static std::size_t cntContexts();
+#endif
 
 protected:
     ContextNtBase();
@@ -54,21 +71,28 @@ protected:
     void storeError(UniqueStoredError &&error);
     void addErrorHandler(UniqueErrorHandler &&handler);
 
-
 private:
     void fulfil();
     bool tryHandleError(UniqueStoredError &error, UniqueErrorHandler &handler);
     virtual void acceptInput() = 0;
+    void unsetTarget();
+    void tryDestroy();
 
 protected:
     ContextNtBase *m_prev;
     ContextNtBase *m_next;
     bool m_isValueSet;
-    bool m_isShadowed;
+    bool m_isShadow;
+    bool m_hasFuture;
+    bool m_hasPromise;
 
 private: // error handling
     UniqueStoredError m_storedError;
     std::vector<UniqueErrorHandler> m_errorHandlers;
+
+#ifdef SAFL_DEVELOPER
+    unsigned m_alias;
+#endif
 };
 
 template<typename tValueType>

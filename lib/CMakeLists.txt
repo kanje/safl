@@ -19,3 +19,9 @@ target_include_directories(${TARGET}
   PUBLIC
     include
 )
+if(SAFL_DEVELOPER)
+    target_compile_definitions(${TARGET}
+      PUBLIC
+        -DSAFL_DEVELOPER
+    )
+endif()
