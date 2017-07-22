@@ -82,6 +82,7 @@ protected:
     ContextNtBase *m_prev;
     ContextNtBase *m_next;
     bool m_isValueSet;
+    bool m_isErrorForwarded;
     bool m_isShadow;
     bool m_hasFuture;
     bool m_hasPromise;
@@ -102,12 +103,10 @@ class ContextValueBase
 public:
     ~ContextValueBase()
     {
-#if 0
         if ( m_isValueSet )
         {
-            // TODO: call m_value's destructor
+            reinterpret_cast<tValueType*>(&m_value)->~tValueType();
         }
-#endif
     }
 
     const tValueType &value() const noexcept

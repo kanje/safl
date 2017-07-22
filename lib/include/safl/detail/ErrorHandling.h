@@ -38,6 +38,8 @@ public:
     {
     }
 
+    virtual ~StoredErrorNtBase() = default;
+
     const void *data() const
     {
         return m_data;

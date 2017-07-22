@@ -34,6 +34,7 @@ ContextNtBase::ContextNtBase()
     : m_prev(nullptr)
     , m_next(nullptr)
     , m_isValueSet(false)
+    , m_isErrorForwarded(false)
     , m_isShadow(false)
     , m_hasFuture(false)
     , m_hasPromise(false)
@@ -57,7 +58,7 @@ ContextNtBase::~ContextNtBase()
 
 bool ContextNtBase::isReady() const
 {
-    return m_isValueSet || m_storedError;
+    return m_isValueSet || m_storedError || m_isErrorForwarded;
 }
 
 bool ContextNtBase::isFulfillable() const
@@ -195,7 +196,7 @@ void ContextNtBase::storeError(UniqueStoredError &&error)
 
         /* Mark this context as fulfilled. This will make isReady() return a valid
          * value and prevent reporting a broken promise. */
-        m_isValueSet = true;
+        m_isErrorForwarded = true;
 
         /* This disconnects this and the next contexts. One or both of them might
          * be destroyed in process. */

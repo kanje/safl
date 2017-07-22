@@ -59,7 +59,6 @@ public:
     explicit Invokable(tFunc &&f)
         : m_f(new detail::Invokable<tFunc>(std::forward<tFunc>(f)))
     {
-        static_assert(!std::is_same<tFunc, Invokable&>::value, "ccc");
     }
 
     void invoke()
