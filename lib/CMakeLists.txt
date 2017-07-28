@@ -25,3 +25,6 @@ if(SAFL_DEVELOPER)
         -DSAFL_DEVELOPER
     )
 endif()
+
+# Extensions:
+add_subdirectory(ext)

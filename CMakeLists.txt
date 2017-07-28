@@ -5,6 +5,8 @@
 cmake_minimum_required(VERSION 3.3)
 project(SAFL VERSION 0.1 LANGUAGES CXX C)
 
+option(SAFL_DEVELOPER "Enable the developer mode" ON)
+
 set(CMAKE_CXX_STANDARD 14)
 add_compile_options(
     -pedantic
@@ -15,8 +17,6 @@ add_compile_options(
     -Wnon-virtual-dtor
     -Wold-style-cast
 )
-
-option(SAFL_DEVELOPER "Enable the developer mode" ON)
 
 enable_testing()
 
