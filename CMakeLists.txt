@@ -7,16 +7,17 @@ project(SAFL VERSION 0.1 LANGUAGES CXX C)
 
 option(SAFL_DEVELOPER "Enable the developer mode" ON)
 
-set(CMAKE_CXX_STANDARD 14)
-add_compile_options(
-    -pedantic
-    -Werror
-    -Wall
-    -Wextra
-    -Wconversion
-    -Wnon-virtual-dtor
-    -Wold-style-cast
-)
+if(SAFL_DEVELOPER)
+    add_compile_options(
+        -pedantic
+        -Werror
+        -Wall
+        -Wextra
+        -Wconversion
+        -Wnon-virtual-dtor
+        -Wold-style-cast
+    )
+endif()
 
 enable_testing()
 

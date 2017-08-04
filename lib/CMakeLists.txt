@@ -19,6 +19,10 @@ target_include_directories(${TARGET}
   PUBLIC
     include
 )
+target_compile_features(${TARGET}
+  PUBLIC
+    cxx_lambda_init_captures # this enforces c++14 or later
+)
 if(SAFL_DEVELOPER)
     target_compile_definitions(${TARGET}
       PUBLIC
