@@ -6,16 +6,16 @@
 #include <safl/Future.h>
 
 // Local includes:
-#include <safl/detail/Executor.h>
+#include <safl/Executor.h>
 
 // Std includes:
 #include <cassert>
 
 using namespace safl::detail;
 
-static Executor *s_executor = nullptr;
+static safl::Executor *s_executor = nullptr;
 
-void Executor::set(Executor *executor) noexcept
+void safl::Executor::set(Executor *executor) noexcept
 {
     s_executor = executor;
 }

@@ -12,3 +12,4 @@ function(add_extension SUBDIR SUMMARY ENABLED_BY_DEFAULT)
 endfunction()
 
 add_extension(capi "CommonAPI" OFF)
+add_extension(qt "Qt EventLoop" OFF)

@@ -4,7 +4,7 @@
 
 // Code to test:
 #include <safl/Future.h>
-#include <safl/detail/Executor.h>
+#include <safl/Executor.h>
 
 // Testing:
 #include <gtest/gtest.h>
@@ -20,10 +20,10 @@
 using namespace safl;
 
 class TestExecutor final
-        : public detail::Executor
+        : public Executor
 {
 public:
-    void invoke(detail::Invokable &&f) noexcept
+    void invoke(Invokable &&f) noexcept
     {
         m_queue.push(std::move(f));
     }
@@ -52,7 +52,7 @@ public:
     }
 
 private:
-    std::queue<detail::Invokable> m_queue;
+    std::queue<Invokable> m_queue;
 };
 
 class MyInt final

@@ -5,15 +5,12 @@
 #pragma once
 
 // Local includes:
-#include "Utils.h"
+#include "detail/Utils.h"
 
 namespace safl
 {
-namespace detail
-{
 
 /**
- * @internal
  * @defgroup Exec Executors
  * @{
  */
@@ -88,5 +85,4 @@ protected:
 
 /// @}
 
-} // namespace detail
 } // namespace safl

@@ -7,10 +7,10 @@ set(TARGET safl)
 add_library(${TARGET}
     include/safl/detail/Context.h
     include/safl/detail/ErrorHandling.h
-    include/safl/detail/Executor.h
     include/safl/detail/FunctionTraits.h
     include/safl/detail/FutureDetail.h
     include/safl/detail/Utils.h
+    include/safl/Executor.h
     include/safl/Future.h
     include/safl/ToFuture.h
     src/safl/Future.cpp
