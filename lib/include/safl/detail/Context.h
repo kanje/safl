@@ -62,6 +62,7 @@ public:
         return m_alias;
     }
     static std::size_t cntContexts();
+    static void resetCounters();
 #endif
 
 protected:
@@ -73,6 +74,7 @@ protected:
 
 private:
     void fulfil();
+    void forwardError(UniqueStoredError &&error);
     bool tryHandleError(UniqueStoredError &error, UniqueErrorHandler &handler);
     virtual void acceptInput() = 0;
     void unsetTarget();
@@ -169,11 +171,12 @@ public:
         using Then = ThenTraits<tFunc>;
 
         DLOG(">> then");
-        auto next = new typename Then::template NextContextType
+        auto nextCtx = new typename Then::template NextContextType
                 <typename Then::ValueType, tFunc, tValueType>(std::forward<tFunc>(f));
-        this->setTarget(next);
+        typename Then::FutureType nextFuture(nextCtx);
+        this->setTarget(nextCtx);
         DLOG("<< then");
-        return typename Then::FutureType(next);
+        return nextFuture;
     }
 
     template<typename tFunc>

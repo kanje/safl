@@ -28,6 +28,11 @@ std::size_t ContextNtBase::cntContexts()
 {
     return s_cntContexts;
 }
+void ContextNtBase::resetCounters()
+{
+    s_nextAlias = 0;
+    s_cntContexts = 0;
+}
 #endif
 
 ContextNtBase::ContextNtBase()
@@ -133,6 +138,10 @@ void ContextNtBase::setTarget(ContextNtBase *next)
     {
         fulfil();
     }
+    if ( m_storedError )
+    {
+        forwardError(std::move(m_storedError));
+    }
 }
 
 void ContextNtBase::unsetTarget()
@@ -190,22 +199,27 @@ void ContextNtBase::storeError(UniqueStoredError &&error)
 
     if ( m_next )
     {
-        /* If there is no error handler for this context, try the next one.
-         * The next context is not destroyed, because m_next->m_prev is not null. */
-        m_next->storeError(std::move(error));
-
-        /* Mark this context as fulfilled. This will make isReady() return a valid
-         * value and prevent reporting a broken promise. */
-        m_isErrorForwarded = true;
-
-        /* This disconnects this and the next contexts. One or both of them might
-         * be destroyed in process. */
-        unsetTarget();
+        forwardError(std::move(error));
     }
     else
     {
         m_storedError = std::move(error);
     }
+}
+
+void ContextNtBase::forwardError(UniqueStoredError &&error)
+{
+    /* If there is no error handler for this context, try the next one.
+     * The next context is not destroyed, because m_next->m_prev is not null. */
+    m_next->storeError(std::move(error));
+
+    /* Mark this context as fulfilled. This will make isReady() return a valid
+     * value and prevent reporting a broken promise. */
+    m_isErrorForwarded = true;
+
+    /* This disconnects this and the next contexts. One or both of them might
+     * be destroyed in process. */
+    unsetTarget();
 }
 
 void ContextNtBase::addErrorHandler(UniqueErrorHandler &&handler)

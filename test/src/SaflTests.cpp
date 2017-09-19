@@ -158,7 +158,7 @@ TEST_F(SaflTest, basicOnError)
     {
         calledWithInt = error;
         return 4.2;
-    }).onError([&](std::string error)
+    }).onError([&](const std::string &error)
     {
         calledWithString = error;
         return 7.6;
@@ -252,6 +252,24 @@ TEST_F(SaflTest, errorWithMultipleFutures)
     EXPECT_TRUE(f2.isReady());
     EXPECT_EQ(1022, calledWithInt);
     EXPECT_EQ(99, f2.value());
+}
+
+TEST_F(SaflTest, errorBeforeThenAndOnError)
+{
+    Promise<int> p;
+    Future<int> f1 = p.future();
+    p.setError(-42);
+    EXPECT_NO_FULFILLED_FUTURES();
+
+    Future<void> f2 = f1.then([](int){});
+
+    int calledWithInt = 0;
+    f2.onError([&](int error)
+    {
+        calledWithInt = error;
+    });
+    EXPECT_FUTURE_FULFILLED();
+    EXPECT_EQ(-42, calledWithInt);
 }
 
 TEST_F(SaflTest, brokenPromise)

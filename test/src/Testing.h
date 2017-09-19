@@ -96,6 +96,11 @@ public:
         TestExecutor::set(&m_executor);
     }
 
+    void SetUp() override
+    {
+        detail::ContextNtBase::resetCounters();
+    }
+
     void TearDown() override
     {
         EXPECT_NO_FULFILLED_FUTURES();

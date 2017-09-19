@@ -26,7 +26,7 @@ add_subdirectory(lib)
 add_subdirectory(test)
 
 # add these files to IDE:
-add_custom_target(extra_files
+add_custom_target(safl-extra-files
   SOURCES
     README.md
     LICENSE
