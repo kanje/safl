@@ -5,19 +5,12 @@
 #pragma once
 
 // Local includes:
+#include "DebugContext.h"
 #include "ErrorHandling.h"
 
 // Std includes:
 #include <memory>
 #include <vector>
-
-#ifdef SAFL_DEVELOPER
-#define DLOG(__message) do {                                                   \
-    std::cout << "[safl] " << this->alias() << ": " << __message << std::endl; \
-} while ( !42 )
-#else
-#define DLOG(__message) do { /* no-op */ } while ( !42 )
-#endif
 
 namespace safl
 {
@@ -42,6 +35,9 @@ class AsyncNextContext;
 
 class ContextNtBase
         : private UniqueInstance
+#ifdef SAFL_DEVELOPER
+        , protected DebugContext
+#endif
 {
     using UniqueStoredError = std::unique_ptr<StoredErrorNtBase>;
     using UniqueErrorHandler = std::unique_ptr<ErrorHandlerNtBase>;
@@ -55,15 +51,6 @@ public:
     void detachPromise();
     void attachFuture();
     void detachFuture();
-
-#ifdef SAFL_DEVELOPER
-    unsigned alias() const
-    {
-        return m_alias;
-    }
-    static std::size_t cntContexts();
-    static void resetCounters();
-#endif
 
 protected:
     ContextNtBase();
@@ -92,10 +79,6 @@ protected:
 private: // error handling
     UniqueStoredError m_storedError;
     std::vector<UniqueErrorHandler> m_errorHandlers;
-
-#ifdef SAFL_DEVELOPER
-    unsigned m_alias;
-#endif
 };
 
 template<typename tValueType>

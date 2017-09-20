@@ -98,7 +98,7 @@ public:
 
     void SetUp() override
     {
-        detail::ContextNtBase::resetCounters();
+        detail::DebugContext::resetCounters();
     }
 
     void TearDown() override
@@ -107,7 +107,7 @@ public:
 
 #ifdef SAFL_DEVELOPER
         /* Simple test for memory leaks. */
-        ASSERT_EQ(0, detail::ContextNtBase::cntContexts());
+        ASSERT_EQ(0, detail::DebugContext::cntContexts());
 #endif
     }
 

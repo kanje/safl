@@ -3,7 +3,7 @@
  */
 
 // Self-include:
-#include <safl/Future.h>
+#include <safl/detail/Context.h>
 
 // Local includes:
 #include <safl/Executor.h>
@@ -20,21 +20,6 @@ void safl::Executor::set(Executor *executor) noexcept
     s_executor = executor;
 }
 
-#ifdef SAFL_DEVELOPER
-static unsigned s_nextAlias = 0;
-static std::size_t s_cntContexts = 0;
-
-std::size_t ContextNtBase::cntContexts()
-{
-    return s_cntContexts;
-}
-void ContextNtBase::resetCounters()
-{
-    s_nextAlias = 0;
-    s_cntContexts = 0;
-}
-#endif
-
 ContextNtBase::ContextNtBase()
     : m_prev(nullptr)
     , m_next(nullptr)
@@ -43,22 +28,11 @@ ContextNtBase::ContextNtBase()
     , m_isShadow(false)
     , m_hasFuture(false)
     , m_hasPromise(false)
-#ifdef SAFL_DEVELOPER
-    , m_alias(s_nextAlias++)
-#endif
 {
-#ifdef SAFL_DEVELOPER
-    DLOG("new");
-    s_cntContexts++;
-#endif
 }
 
 ContextNtBase::~ContextNtBase()
 {
-#ifdef SAFL_DEVELOPER
-    s_cntContexts--;
-    DLOG("delete");
-#endif
 }
 
 bool ContextNtBase::isReady() const
