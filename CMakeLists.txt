@@ -3,7 +3,7 @@
 #
 
 cmake_minimum_required(VERSION 3.3)
-project(SAFL VERSION 0.1 LANGUAGES CXX C)
+project(safl VERSION 0.2 LANGUAGES CXX C)
 
 option(SAFL_DEVELOPER "Enable the developer mode" ON)
 

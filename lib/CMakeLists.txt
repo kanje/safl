@@ -2,8 +2,7 @@
 # This file is a part of Stand-alone Future Library (safl).
 #
 
-set(TARGET safl)
-
+set(TARGET ${PROJECT_NAME})
 add_library(${TARGET}
     include/safl/detail/Context.h
     include/safl/detail/ErrorHandling.h
