@@ -16,5 +16,5 @@ notable one -- no C++ exceptions.
 ## Related Projects
 * <a href="https://github.com/kanje/safl-qt">safl-qt</a> -- Qt Integration Module;
   makes safl use Qt event loop
-* <a href="https://github.com/kanje/safl-sandbox">safl-sandbox</a> -- The Sandbox; the demo
+* <a href="https://github.com/kanje/sandbox">sandbox</a> -- The Sandbox; the demo
   project which uses safl
