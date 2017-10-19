@@ -20,6 +20,11 @@ void safl::Executor::set(Executor *executor) noexcept
     s_executor = executor;
 }
 
+safl::Executor *safl::Executor::get() noexcept
+{
+    return s_executor;
+}
+
 ContextNtBase::ContextNtBase()
     : m_prev(nullptr)
     , m_next(nullptr)

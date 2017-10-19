@@ -71,6 +71,7 @@ class Executor
 {
 public:
     static void set(Executor *executor) noexcept;
+    static Executor *get() noexcept;
     virtual void invoke(Invokable &&f) noexcept = 0;
 
     template<typename tFunc>

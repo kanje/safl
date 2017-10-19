@@ -2,31 +2,17 @@
 # This file is a part of Stand-alone Future Library (safl).
 #
 
-cmake_minimum_required(VERSION 3.3)
-project(safl VERSION 0.2 LANGUAGES CXX C)
+cmake_minimum_required(VERSION 3.9)
+project(safl VERSION 0.2 LANGUAGES CXX)
 
 option(SAFL_DEVELOPER "Enable the developer mode" ON)
-
-if(SAFL_DEVELOPER)
-    add_compile_options(
-        -pedantic
-        -Werror
-        -Wall
-        -Wextra
-        -Wconversion
-        -Wnon-virtual-dtor
-        -Wold-style-cast
-    )
-endif()
-
-enable_testing()
 
 add_subdirectory(doc)
 add_subdirectory(lib)
 add_subdirectory(test)
 
 # add these files to IDE:
-add_custom_target(safl-extra-files
+add_custom_target(${PROJECT_NAME}-extra-files
   SOURCES
     README.md
     LICENSE
