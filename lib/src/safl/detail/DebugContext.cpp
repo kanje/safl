@@ -8,9 +8,9 @@
 using namespace safl::detail;
 
 static unsigned int s_nextAlias = 0;
-static std::size_t s_cntContexts = 0;
+static unsigned int s_cntContexts = 0;
 
-std::size_t DebugContext::cntContexts() noexcept
+unsigned int DebugContext::cntContexts() noexcept
 {
     return s_cntContexts;
 }

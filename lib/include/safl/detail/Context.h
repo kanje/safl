@@ -12,14 +12,12 @@
 #include <memory>
 #include <vector>
 
-namespace safl
-{
+namespace safl {
 
 template<typename tValueType>
 class Future;
 
-namespace detail
-{
+namespace detail {
 
 class FutureNtBase;
 
@@ -88,8 +86,7 @@ class ContextValueBase
 public:
     ~ContextValueBase()
     {
-        if ( m_isValueSet )
-        {
+        if ( m_isValueSet ) {
             reinterpret_cast<tValueType*>(&m_value)->~tValueType();
         }
     }
@@ -286,14 +283,11 @@ class AsyncNextContext final
 private:
     void acceptInput() noexcept override
     {
-        if ( m_shadow == nullptr )
-        {
+        if ( m_shadow == nullptr ) {
             DLOG(">> acceptInput (create shadow)");
             m_shadow = this->m_f(this->prev()->value()).makeShadowOf(this);
             DLOG("<< acceptInput (create shadow)");
-        }
-        else
-        {
+        } else {
             DLOG(">> acceptInput (process shadow)");
             this->setValue(m_shadow->value());
             DLOG("<< acceptInput (process shadow)");

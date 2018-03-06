@@ -28,7 +28,9 @@ add_custom_target(doc
   WORKING_DIRECTORY
     ${CMAKE_CURRENT_BINARY_DIR}
   SOURCES
-    SaflDoxygen.css
+    style/CustomDoxygen.css
+    style/DoxygenLayout.xml
+    style/Header.html
     pages/MainPage.dox
     pages/Specification.dox
   COMMENT

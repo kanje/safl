@@ -13,10 +13,8 @@
 #define DLOG(__message) do { /* no-op */ } while ( !42 )
 #endif
 
-namespace safl
-{
-namespace detail
-{
+namespace safl {
+namespace detail {
 
 /**
  * @internal
@@ -33,7 +31,7 @@ public:
     }
 
 public:
-    static std::size_t cntContexts() noexcept;
+    static unsigned int cntContexts() noexcept;
     static void resetCounters() noexcept;
 
 protected:
@@ -43,26 +41,6 @@ protected:
 private:
     unsigned int m_alias;
 };
-
-/**
- * @internal
- * @brief The base class for non-copyable but movable classes.
- *
- * The classes which must be not copyable but movable, must @e privately inherit
- * from this class.
- */
-
-/**
- * @internal
- * @brief The base class for non-copyable and non-movable classes.
- *
- * The classes which must be neither copyable nor movable, must @e privately
- * inherit from this class.
- */
-/**
- * @internal
- * @brief The base for classes which operate on or store an erased type.
- */
 
 /// @}
 

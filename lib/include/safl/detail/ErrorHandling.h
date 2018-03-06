@@ -5,13 +5,12 @@
 #pragma once
 
 // Local includes:
-#include "Utils.h"
 #include "FunctionTraits.h"
+#include "TypeEraser.h"
+#include "UniqueInstance.h"
 
-namespace safl
-{
-namespace detail
-{
+namespace safl {
+namespace detail {
 
 class ContextNtBase;
 
@@ -71,6 +70,7 @@ private:
  */
 class ErrorHandlerNtBase
         : public TypeEraser
+        , private UniqueInstance
 {
     using TypeEraser::TypeEraser;
 

@@ -6,16 +6,15 @@
 
 // Local includes:
 #include "Context.h"
+#include "NonCopyable.h"
 
-namespace safl
-{
+namespace safl {
 
 /**
  * @internal
  * @brief The implementation detail namespace.
  */
-namespace detail
-{
+namespace detail {
 
 /*******************************************************************************
  * Base classes for Future.
@@ -53,7 +52,7 @@ public:
     auto &onError(tFunc &&f) noexcept
     {
         m_ctx->onError(std::forward<tFunc>(f));
-        return *this;
+        return *static_cast<Future<tValueType>*>(this);
     }
 
 public:
@@ -71,8 +70,7 @@ public:
 
     ~FutureBase()
     {
-        if ( m_ctx )
-        {
+        if ( m_ctx ) {
             m_ctx->detachFuture();
         }
     }
@@ -133,10 +131,8 @@ protected:
 
     ~PromiseBase() noexcept
     {
-        if ( m_ctx )
-        {
-            if ( m_ctx->isFulfillable() && !m_ctx->isReady() )
-            {
+        if ( m_ctx ) {
+            if ( m_ctx->isFulfillable() && !m_ctx->isReady() ) {
                 setError(BrokenPromise{});
             }
             m_ctx->detachPromise();

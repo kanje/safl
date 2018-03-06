@@ -8,24 +8,22 @@
 #include <type_traits>
 #include <tuple>
 
-namespace safl
-{
-namespace detail
-{
+namespace safl {
+namespace detail {
 
-namespace detail // even more detail
-{
+namespace detail { // even more detail
 
 template<typename tReturnType, typename... tArgs>
 struct FunctionTraits
 {
     using ReturnType = tReturnType;
+    using ArgsTuple = std::tuple<tArgs...>;
     using NrArgs = std::integral_constant<std::size_t, sizeof...(tArgs)>;
 
     template <std::size_t idx>
     using Arg = typename std::remove_cv_t<
                              std::remove_reference_t<
-                                 std::tuple_element_t<idx, std::tuple<tArgs...>>>>;
+                                 std::tuple_element_t<idx, ArgsTuple>>>;
 
     using FirstArg = Arg<0>;
 };
@@ -39,11 +37,13 @@ struct FunctionTraits<tReturnType>
 
 } // namespace detail
 
+/// @cond
 template<typename tFunc>
 struct FunctionTraits
         : FunctionTraits<decltype(&std::remove_reference_t<tFunc>::operator())>
 {
 };
+/// @endcond
 
 template<typename tReturnType, typename tClassType, typename... tArgs>
 struct FunctionTraits<tReturnType(tClassType::*)(tArgs...) const>
@@ -82,4 +82,4 @@ struct FunctionTraits<tReturnType(tArgs...)>
 };
 
 } // namespace detail
-} // namespace detail
+} // namespace safl

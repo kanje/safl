@@ -1,0 +1,58 @@
+body {
+    color: #222;
+}
+
+div.contents h3 {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+h1 {
+    font-size: 18px;
+}
+
+h2 {
+    font-size: 16px;
+}
+
+h3 {
+    font-size: 14px;
+}
+
+#saflcap, #saflbrief {
+    padding-left: 20px;
+    width: initial;
+    color: white;
+    background-color: #105962;
+    border: none;
+    font-weight: bold;
+}
+#saflcap {
+    font-size: 130%;
+    padding-top: 7px;
+}
+#saflbrief {
+    font-size: 80%;
+    padding-bottom: 5px;
+}
+
+/* Page titles */
+div.title {
+    margin: 2px 2px;
+}
+
+/* @code */
+div.line {
+    line-height: 1.25;
+}
+div.fragment {
+    border-radius: 5px;
+    padding: 4px 0px 4px 8px;
+}
+
+/* @c */
+code {
+    background: #f2f2f2;
+    border: 1px solid #c4cfe5;
+    border-radius: 5px;
+}

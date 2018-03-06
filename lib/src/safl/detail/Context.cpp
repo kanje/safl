@@ -13,18 +13,6 @@
 
 using namespace safl::detail;
 
-static safl::Executor *s_executor = nullptr;
-
-void safl::Executor::set(Executor *executor) noexcept
-{
-    s_executor = executor;
-}
-
-safl::Executor *safl::Executor::get() noexcept
-{
-    return s_executor;
-}
-
 ContextNtBase::ContextNtBase()
     : m_prev(nullptr)
     , m_next(nullptr)
@@ -36,9 +24,7 @@ ContextNtBase::ContextNtBase()
 {
 }
 
-ContextNtBase::~ContextNtBase()
-{
-}
+ContextNtBase::~ContextNtBase() = default;
 
 bool ContextNtBase::isReady() const
 {
@@ -50,7 +36,7 @@ bool ContextNtBase::isFulfillable() const
     /* The context is fulfillable if both a result can be achieved (e.g. a value
      * can be set by a previous context or a Promise), and the result can be used
      * (i.e. it can be propagated to the next context or accessed via a Future). */
-    return (m_hasPromise || m_prev) && (m_hasFuture || m_next);
+    return (m_hasPromise || (m_prev != nullptr)) && (m_hasFuture || (m_next != nullptr));
 }
 
 void ContextNtBase::setValue()
@@ -58,8 +44,7 @@ void ContextNtBase::setValue()
     assert(!m_isValueSet);
     assert(!m_storedError);
     m_isValueSet = true;
-    if ( m_next )
-    {
+    if ( m_next != nullptr ) {
         fulfil();
     }
 }
@@ -113,20 +98,17 @@ void ContextNtBase::setTarget(ContextNtBase *next)
     assert(!next->m_prev);
     m_next = next;
     m_next->m_prev = this;
-    if ( m_isValueSet )
-    {
+    if ( m_isValueSet ) {
         fulfil();
     }
-    if ( m_storedError )
-    {
+    if ( m_storedError ) {
         forwardError(std::move(m_storedError));
     }
 }
 
 void ContextNtBase::unsetTarget()
 {
-    if ( m_next )
-    {
+    if ( m_next != nullptr ) {
         DLOG("unsetTarget: " << m_next->alias());
         assert(m_next->m_prev == this);
         m_next->m_prev = nullptr;
@@ -139,7 +121,7 @@ void ContextNtBase::unsetTarget()
 void ContextNtBase::fulfil()
 {
     DLOG("fulfil");
-    assert(s_executor != nullptr);
+    assert(Executor::instance() != nullptr);
 
     auto doFulfil = [this]()
     {
@@ -152,13 +134,10 @@ void ContextNtBase::fulfil()
         unsetTarget();
     };
 
-    if ( m_isShadow )
-    {
+    if ( m_isShadow ) {
         doFulfil();
-    }
-    else
-    {
-        s_executor->invoke(std::move(doFulfil));
+    } else {
+        Executor::instance()->invoke(std::move(doFulfil));
     }
 }
 
@@ -168,20 +147,15 @@ void ContextNtBase::storeError(UniqueStoredError &&error)
     assert(!m_storedError);
 
     /* Search for an appropriate error handler. */
-    for ( auto &handler : m_errorHandlers )
-    {
-        if ( tryHandleError(error, handler) )
-        {
+    for ( auto &handler : m_errorHandlers ) {
+        if ( tryHandleError(error, handler) ) {
             return;
         }
     }
 
-    if ( m_next )
-    {
+    if ( m_next != nullptr ) {
         forwardError(std::move(error));
-    }
-    else
-    {
+    } else {
         m_storedError = std::move(error);
     }
 }
@@ -204,21 +178,18 @@ void ContextNtBase::forwardError(UniqueStoredError &&error)
 void ContextNtBase::addErrorHandler(UniqueErrorHandler &&handler)
 {
     /* Maybe the new error handler can handle a stored error? */
-    if ( m_storedError )
-    {
+    if ( m_storedError ) {
         tryHandleError(m_storedError, handler);
-    }
-    else
-    {
+    } else {
         m_errorHandlers.push_back(std::move(handler));
     }
 }
 
 bool ContextNtBase::tryHandleError(UniqueStoredError &error, UniqueErrorHandler &handler)
 {
-    if ( handler->isType(error) )
-    {
-        s_executor->invoke([this, error = std::move(error), handler = std::move(handler)]()
+    if ( handler->isOfTypeAs(error) ) {
+        Executor::instance()->
+                invoke([this, error = std::move(error), handler = std::move(handler)]()
         {
             handler->acceptError(this, error.get());
         });
@@ -229,8 +200,7 @@ bool ContextNtBase::tryHandleError(UniqueStoredError &error, UniqueErrorHandler 
 
 void ContextNtBase::tryDestroy()
 {
-    if ( !(m_hasPromise || m_hasFuture || m_prev || m_next) )
-    {
+    if ( !(m_hasPromise || m_hasFuture || (m_prev != nullptr) || (m_next != nullptr)) ) {
         delete this;
     }
 }

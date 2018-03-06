@@ -7,8 +7,7 @@
 // Local includes:
 #include "detail/FutureDetail.h"
 
-namespace safl
-{
+namespace safl {
 
 /**
  * @brief The Future.

@@ -5,35 +5,35 @@
 #pragma once
 
 // Local includes:
-#include "detail/Utils.h"
+#include "detail/UniqueInstance.h"
 
-namespace safl
-{
+// Std includes:
+#include <memory>
+
+namespace safl {
 
 /**
  * @defgroup Exec Executors
  * @{
  */
 
-class Invokable;
-
 namespace detail
 {
 
-class InvokableNtBase
+class InvocableNtBase
         : private UniqueInstance
 {
 public:
-    virtual ~InvokableNtBase() = default;
+    virtual ~InvocableNtBase() = default;
     virtual void invoke() = 0;
 };
 
 template<typename tFunc>
-class Invokable
-        : public InvokableNtBase
+class Invocable
+        : public InvocableNtBase
 {
 public:
-    explicit Invokable(tFunc &&f)
+    explicit Invocable(tFunc &&f)
         : m_f(std::forward<tFunc>(f))
     {
     }
@@ -47,14 +47,12 @@ private:
     std::decay_t<tFunc> m_f;
 };
 
-} // namespace detail
-
-class Invokable
+class Task
 {
 public:
     template<typename tFunc>
-    explicit Invokable(tFunc &&f)
-        : m_f(new detail::Invokable<tFunc>(std::forward<tFunc>(f)))
+    Task(tFunc &&f)
+        : m_f(std::make_unique<Invocable<tFunc>>(std::forward<tFunc>(f)))
     {
     }
 
@@ -64,21 +62,23 @@ public:
     }
 
 private:
-    std::unique_ptr<detail::InvokableNtBase> m_f;
+    std::unique_ptr<InvocableNtBase> m_f;
 };
 
+} // namespace detail
+
 class Executor
+        : private detail::UniqueInstance
 {
 public:
-    static void set(Executor *executor) noexcept;
-    static Executor *get() noexcept;
-    virtual void invoke(Invokable &&f) noexcept = 0;
+    using Task = detail::Task;
 
-    template<typename tFunc>
-    void invoke(tFunc &&f)
-    {
-        invoke(Invokable(std::forward<tFunc>(f)));
-    }
+public:
+    virtual void invoke(Task &&task) noexcept = 0;
+
+public:
+    static void setInstance(Executor *executor) noexcept;
+    static Executor *instance() noexcept;
 
 protected:
     ~Executor() noexcept = default;

@@ -20,13 +20,13 @@ class TestExecutor final
         : public Executor
 {
 public:
-    void invoke(Invokable &&f) noexcept override;
+    void invoke(Task &&task) noexcept override;
     bool processSingle();
     void processNext();
     std::size_t queueSize() const;
 
 private:
-    std::queue<Invokable> m_queue;
+    std::queue<Task> m_queue;
 };
 
 } // namespace detail
@@ -37,9 +37,9 @@ using namespace safl;
 using namespace safl::testing;
 using namespace safl::testing::detail;
 
-void TestExecutor::invoke(Invokable &&f) noexcept
+void TestExecutor::invoke(Task &&task) noexcept
 {
-    m_queue.push(std::move(f));
+    m_queue.push(std::move(task));
 }
 
 bool TestExecutor::processSingle()
@@ -68,7 +68,7 @@ std::size_t TestExecutor::queueSize() const
 Test::Test() noexcept
     : m_executor(std::make_unique<TestExecutor>())
 {
-    TestExecutor::set(m_executor.get());
+    TestExecutor::setInstance(m_executor.get());
     safl::detail::DebugContext::resetCounters();
 }
 

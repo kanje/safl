@@ -3,7 +3,6 @@
 #
 
 find_package(GTest REQUIRED)
-enable_testing()
 
 set(TEST_LIBRARY safl-testing)
 add_library(${TEST_LIBRARY}
