@@ -16,5 +16,9 @@
  * For a short introduction please refer to @subpage md_README "README.md".
  *
  * This manual consists of these sections:
- * - @subpage Specs
+ * - @subpage man_FuturesAndPromises
+ * - Chaining Operations
+ * - Error Handling
+ * - Messaging
+ * - Synchronisation
  */

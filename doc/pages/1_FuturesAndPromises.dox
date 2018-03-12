@@ -1,0 +1,32 @@
+/*
+ * This file is a part of Stand-alone Future Library (safl).
+ */
+
+/**
+@page man_FuturesAndPromises Futures and Promises
+
+@tableofcontents
+@section fut_Intro Introduction
+
+@e Futures and @e promises is one of patterns used in asynchronous programming.
+@safl{Future} represents a @e future @e result of an @e asynchronous @e function,
+whereas @safl{Promise} represents a @e promise to provide such result. The result
+in this context is either a @e value of a specific type or an arbitrary @e error.
+When the result becomes available, @promise becomes @e fulfilled, while @future
+is now considered to be @e ready.
+
+@section fut_PublicApi Public API
+
+Asynchronous functions return @future of a specific type. For example, if a function
+returns @c Future<Image>, this means that this is an asynchronous function which
+promises to deliver @c Image at some point of time in the future:
+
+@code
+Future<Image> downloadImage(const std::string &url);
+@endcode
+
+This usually means that such function starts a long running operation, in this
+example --- an image download process, and then immediately returns. As it does
+not wait until the results are available, in this case --- the image is downloaded,
+it does not block the current thread of execution.
+*/

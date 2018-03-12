@@ -45,6 +45,8 @@ DOT_TRANSPARENT        = YES
 DOT_IMAGE_FORMAT       = svg
 SHOW_FILES             = NO
 AUTOLINK_SUPPORT       = NO
-WARN_AS_ERROR          = NO
+WARN_AS_ERROR          = YES
 
-ALIASES                = safl{1}="@ref safl::\1 \"\1\""
+ALIASES                = safl{1}="@ref safl::\1 \"\1\"" \
+                         future="Future" \
+                         promise="Promise"

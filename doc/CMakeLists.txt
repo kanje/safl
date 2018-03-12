@@ -31,8 +31,8 @@ add_custom_target(doc
     style/CustomDoxygen.css
     style/DoxygenLayout.xml
     style/Header.html
-    pages/MainPage.dox
-    pages/Specification.dox
+    pages/0_MainPage.dox
+    pages/1_FuturesAndPromises.dox
   COMMENT
     "Generating SAFL documentation"
   VERBATIM
