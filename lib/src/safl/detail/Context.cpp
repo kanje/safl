@@ -141,14 +141,14 @@ void ContextNtBase::fulfil()
     }
 }
 
-void ContextNtBase::storeError(UniqueStoredError &&error)
+void ContextNtBase::storeError(Signal &&error)
 {
     assert(!m_isValueSet);
     assert(!m_storedError);
 
     /* Search for an appropriate error handler. */
     for ( auto &handler : m_errorHandlers ) {
-        if ( tryHandleError(error, handler) ) {
+        if ( tryHandleSignal(error, handler) ) {
             return;
         }
     }
@@ -160,7 +160,7 @@ void ContextNtBase::storeError(UniqueStoredError &&error)
     }
 }
 
-void ContextNtBase::forwardError(UniqueStoredError &&error)
+void ContextNtBase::forwardError(Signal &&error)
 {
     /* If there is no error handler for this context, try the next one.
      * The next context is not destroyed, because m_next->m_prev is not null. */
@@ -175,27 +175,57 @@ void ContextNtBase::forwardError(UniqueStoredError &&error)
     unsetTarget();
 }
 
-void ContextNtBase::addErrorHandler(UniqueErrorHandler &&handler)
+void ContextNtBase::addErrorHandler(SignalHandler &&handler)
 {
     /* Maybe the new error handler can handle a stored error? */
     if ( m_storedError ) {
-        tryHandleError(m_storedError, handler);
+        tryHandleSignal(m_storedError, handler);
     } else {
         m_errorHandlers.push_back(std::move(handler));
     }
 }
 
-bool ContextNtBase::tryHandleError(UniqueStoredError &error, UniqueErrorHandler &handler)
+bool ContextNtBase::tryHandleSignal(Signal &error, SignalHandler &handler)
 {
     if ( handler->isOfTypeAs(error) ) {
         Executor::instance()->
                 invoke([this, error = std::move(error), handler = std::move(handler)]()
         {
-            handler->acceptError(this, error.get());
+            handler->accept(this, error.get());
         });
         return true;
     }
     return false;
+}
+
+void ContextNtBase::storeMessage(Signal &&msg)
+{
+    /* The message must be sent to the currently running context. */
+    if ( m_prev != nullptr ) {
+        m_prev->storeMessage(std::move(msg));
+        return;
+    }
+
+    /* Search for an appropriate message handler. */
+    for ( auto &handler : m_messageHandlers ) {
+        if ( tryHandleSignal(msg, handler) ) {
+            return;
+        }
+    }
+
+    m_storedMessages.push_back(std::move(msg));
+}
+
+void ContextNtBase::addMessageHandler(SignalHandler &&handler)
+{
+    m_messageHandlers.push_back(std::move(handler));
+
+    /* Maybe the new error handler can handle a stored error? */
+    if ( m_prev == nullptr ) {
+        for ( auto &msg : m_storedMessages ) {
+            tryHandleSignal(msg, handler);
+        }
+    }
 }
 
 void ContextNtBase::tryDestroy()

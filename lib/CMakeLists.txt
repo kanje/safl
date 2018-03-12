@@ -21,10 +21,10 @@ add_library(${TARGET}
     include/safl/ToFuture.h
     include/safl/detail/Context.h
     include/safl/detail/DebugContext.h
-    include/safl/detail/ErrorHandling.h
     include/safl/detail/FunctionTraits.h
     include/safl/detail/FutureDetail.h
     include/safl/detail/NonCopyable.h
+    include/safl/detail/Signalling.h
     include/safl/detail/TypeEraser.h
     include/safl/detail/UniqueInstance.h
     src/safl/Executor.cpp

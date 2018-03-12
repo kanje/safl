@@ -6,7 +6,7 @@
 
 // Local includes:
 #include "DebugContext.h"
-#include "ErrorHandling.h"
+#include "Signalling.h"
 
 // Std includes:
 #include <memory>
@@ -37,9 +37,6 @@ class ContextNtBase
         , protected DebugContext
 #endif
 {
-    using UniqueStoredError = std::unique_ptr<StoredErrorNtBase>;
-    using UniqueErrorHandler = std::unique_ptr<ErrorHandlerNtBase>;
-
 public:
     bool isReady() const;
     bool isFulfillable() const;
@@ -50,17 +47,34 @@ public:
     void attachFuture();
     void detachFuture();
 
+public:
+    template<typename tFunc>
+    void onMessage(tFunc &&f)
+    {
+        addMessageHandler(makeMessageHandler(std::forward<tFunc>(f)));
+    }
+
+    template<typename tMessage>
+    void sendMessage(tMessage &&msg)
+    {
+        storeMessage(makeSignal(std::forward<tMessage>(msg)));
+    }
+
 protected:
     ContextNtBase();
     virtual ~ContextNtBase();
     void setTarget(ContextNtBase *next);
-    void storeError(UniqueStoredError &&error);
-    void addErrorHandler(UniqueErrorHandler &&handler);
+    void storeError(Signal &&error);
+    void addErrorHandler(SignalHandler &&handler);
 
 private:
     void fulfil();
-    void forwardError(UniqueStoredError &&error);
-    bool tryHandleError(UniqueStoredError &error, UniqueErrorHandler &handler);
+    void forwardError(Signal &&error);
+    bool tryHandleSignal(Signal &error, SignalHandler &handler);
+
+    void storeMessage(Signal &&msg);
+    void addMessageHandler(SignalHandler &&handler);
+
     virtual void acceptInput() = 0;
     void unsetTarget();
     void tryDestroy();
@@ -75,8 +89,11 @@ protected:
     bool m_hasPromise;
 
 private: // error handling
-    UniqueStoredError m_storedError;
-    std::vector<UniqueErrorHandler> m_errorHandlers;
+    Signal m_storedError;
+    std::vector<SignalHandler> m_errorHandlers;
+
+    std::vector<Signal> m_storedMessages;
+    std::vector<SignalHandler> m_messageHandlers;
 };
 
 template<typename tValueType>
@@ -163,16 +180,14 @@ public:
     void onError(tFunc &&f)
     {
         /* Constraints for a provided callable are checked inside ErrorHandler */
-        this->addErrorHandler(std::unique_ptr<ErrorHandlerNtBase>(
-                                  new ErrorHandler<tValueType, tFunc>(std::forward<tFunc>(f))));
+        this->addErrorHandler(makeErrorHandler<tValueType>(std::forward<tFunc>(f)));
     }
 
     template<typename tErrorType>
     void setError(tErrorType &&error)
     {
         DLOG(">> setError");
-        this->storeError(std::unique_ptr<StoredErrorNtBase>(
-                             new StoredError<tErrorType>(std::forward<tErrorType>(error))));
+        this->storeError(makeSignal(std::forward<tErrorType>(error)));
         DLOG("<< setError");
     }
 };

@@ -73,7 +73,7 @@ TEST_F(SaflTest, lvalueLambda)
     EXPECT_EQ(42, calledWith);
 }
 
-int divideByTwo(int value)
+static int divideByTwo(int value)
 {
     return value / 2;
 }
@@ -287,4 +287,46 @@ TEST_F(SaflTest, brokenPromise)
     p.forget();
     EXPECT_FUTURE_FULFILLED();
     EXPECT_TRUE(isPromiseBroken);
+}
+
+TEST_F(SaflTest, basicMessage)
+{
+    Promise<int> p;
+    Future<int> f = p.future();
+
+    int calledWithInt = 0;
+    p.onMessage([&](const MyInt &i)
+    {
+        calledWithInt = i.value();
+    });
+    EXPECT_NO_FULFILLED_FUTURES();
+
+    f.sendMessage(MyInt(42));
+    EXPECT_SMTH_INVOKED();
+    EXPECT_EQ(42, calledWithInt);
+}
+
+TEST_F(SaflTest, messageWithFutureChain)
+{
+    Promise<int> p;
+    Future<int> f1 = p.future();
+
+    int calledWithInt = 0;
+
+    auto f2 = f1.then([&](int i)
+    {
+        calledWithInt = i;
+    });
+
+    p.onMessage([&](const MyInt &i)
+    {
+        calledWithInt += i.value();
+    });
+    EXPECT_NO_FULFILLED_FUTURES();
+
+    /* Even though we are sending a message through the last future, it must be
+     * processed by the original promise. */
+    f2.sendMessage(MyInt(42));
+    EXPECT_SMTH_INVOKED();
+    EXPECT_EQ(42, calledWithInt);
 }

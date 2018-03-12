@@ -10,6 +10,9 @@
 
 namespace safl {
 
+template<typename tValueType>
+class Promise;
+
 /**
  * @internal
  * @brief The implementation detail namespace.
@@ -53,6 +56,12 @@ public:
     {
         m_ctx->onError(std::forward<tFunc>(f));
         return *static_cast<Future<tValueType>*>(this);
+    }
+
+    template<typename tErrorType>
+    void sendMessage(tErrorType &&error) noexcept
+    {
+        m_ctx->sendMessage(std::forward<tErrorType>(error));
     }
 
 public:
@@ -120,6 +129,13 @@ public:
     void setError(tErrorType &&error) noexcept
     {
         m_ctx->setError(std::forward<tErrorType>(error));
+    }
+
+    template<typename tFunc>
+    auto &onMessage(tFunc &&f) noexcept
+    {
+        m_ctx->onMessage(std::forward<tFunc>(f));
+        return *static_cast<Promise<tValueType>*>(this);
     }
 
 protected:
