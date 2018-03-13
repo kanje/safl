@@ -110,7 +110,7 @@ public:
 
     const tValueType &value() const noexcept
     {
-        return *reinterpret_cast<const tValueType*>(m_value);
+        return *reinterpret_cast<const tValueType*>(&m_value);
     }
 
     void setValue(const tValueType &value) noexcept
@@ -122,7 +122,7 @@ public:
     }
 
 private:
-    char m_value[sizeof(tValueType)];
+    std::aligned_storage_t<sizeof(tValueType)> m_value;
 };
 
 template<>
