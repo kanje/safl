@@ -7,6 +7,11 @@ project(safl VERSION 0.2 LANGUAGES CXX)
 
 option(SAFL_DEVELOPER "Enable the developer mode" OFF)
 
+# Check if we are embedded into a source tree of some other project:
+if("${CMAKE_PROJECT_NAME}" STREQUAL "${PROJECT_NAME}")
+    set(SAFL_IS_ROOT_PROJECT TRUE)
+endif()
+
 # Documentation:
 add_subdirectory(doc)
 

@@ -11,7 +11,7 @@ PROJECT_BRIEF          = "Stand-alone C++ future/promise library"
 STRIP_FROM_PATH        = @PROJECT_SOURCE_DIR@ \
                          @PROJECT_BINARY_DIR@
 
-OUTPUT_DIRECTORY       = @PROJECT_BINARY_DIR@/doc
+OUTPUT_DIRECTORY       = @CMAKE_BINARY_DIR@/@SAFL_DOXY_TARGET@
 INPUT                  = @PROJECT_SOURCE_DIR@
 EXAMPLE_PATH           = @PROJECT_SOURCE_DIR@
 FILE_PATTERNS          = *.cpp *.h *.dox *.md

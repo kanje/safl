@@ -21,8 +21,15 @@ if(SAFL_DEVELOPER)
     set(SAFL_DOXY_INTERNAL_DOCS YES)
 endif()
 
+# If safl is embedded into some other project, that project could already have
+# a "make doc" target, so in order to avoid name clashes we name it "safl-doc".
+set(SAFL_DOXY_TARGET doc)
+if(NOT SAFL_IS_ROOT_PROJECT)
+    set(SAFL_DOXY_TARGET safl-doc)
+endif()
+
 configure_file(Doxyfile.in Doxyfile @ONLY)
-add_custom_target(doc
+add_custom_target(${SAFL_DOXY_TARGET}
   COMMAND
     ${DOXYGEN_EXECUTABLE} Doxyfile
   WORKING_DIRECTORY
