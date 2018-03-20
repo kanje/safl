@@ -39,7 +39,6 @@ add_custom_target(${SAFL_DOXY_TARGET}
     style/DoxygenLayout.xml
     style/Header.html
     pages/0_MainPage.dox
-    pages/1_FuturesAndPromises.dox
   COMMENT
     "Generating SAFL documentation"
   VERBATIM

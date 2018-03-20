@@ -48,5 +48,5 @@ AUTOLINK_SUPPORT       = NO
 WARN_AS_ERROR          = YES
 
 ALIASES                = safl{1}="@ref safl::\1 \"\1\"" \
-                         future="Future" \
-                         promise="Promise"
+                         future="<span class=\"future\">Future</span>" \
+                         promise="<span class=\"future\">Promise</span>"

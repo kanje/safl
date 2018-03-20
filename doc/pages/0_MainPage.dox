@@ -3,22 +3,67 @@
  */
 
 /**
- * @mainpage
- *
- * Welcome to the Doxygen documentation of SAFL.
- *
- * @internal
- * @note This documentation includes internal details and is intended for library
- *       developers. If you want to include only the documentation for library
- *       users, please configure the project with @c SAFL_DEVELOPER=OFF.
- * @endinternal
- *
- * For a short introduction please refer to @subpage md_README "README.md".
- *
- * This manual consists of these sections:
- * - @subpage man_FuturesAndPromises
- * - Chaining Operations
- * - Error Handling
- * - Messaging
- * - Synchronisation
- */
+@mainpage
+@tableofcontents
+
+Welcome to the Doxygen documentation of SAFL.
+
+@internal
+@note This documentation includes internal details and is intended for library
+      developers. If you want to include only the documentation for library
+      users, please configure the project with @c SAFL_DEVELOPER=OFF.
+@endinternal
+
+For a short introduction please refer to @subpage md_README "README.md".
+
+@section safl_FuturePromise Futures and Promises
+
+@e Futures and @e promises is one of patterns used in asynchronous programming.
+@safl{Future} represents a @e future @e result of an @e asynchronous @e function,
+whereas @safl{Promise} represents a @e promise to provide such result. The result
+in this context is either a @e value of a specific type or an arbitrary @e error.
+
+When the result becomes available, @promise becomes @e fulfilled and @future
+becomes @e ready.
+
+@section safl_FutureApi Future-based API
+
+Asynchronous functions return @future of a specific type. For example, if a function
+returns @c Future<Image>, this means that this is an asynchronous function which
+promises to deliver @c Image at some point of time in the future:
+
+@code
+Future<Image> downloadImage(int index);
+@endcode
+
+This usually means that such function starts a long running operation, in this
+example --- an image download process, and then immediately returns. As it does
+not wait until the results are available, in this case --- the image is downloaded,
+it does not block the current thread of execution.
+
+Generally, such functions do one of these:
+- start a worker thread to perform some task, or
+- post some task to an event loop (e.g. main loop), or
+- wait on I/O, e.g. network, IPC etc.
+
+@section safl_Results Handling Results
+
+One can use @safl{Future::then()} to specify a continuation -- a function to be
+invoked when @future becomes ready. The continuation must accept exactly one
+argument -- a type of the corresponding @future. For instance, the code below
+shows an image as soon as it is downloaded:
+
+@code
+downloadImage(42).then([](const Image &image)
+{
+    showImage(image);
+});
+@endcode
+
+Here we use lambda, but any callable would go. The same code can be also written
+as:
+
+@code
+downloadImage(42).then(showImage);
+@endcode
+*/
