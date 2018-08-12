@@ -14,8 +14,7 @@
 using namespace safl::detail;
 
 ContextNtBase::ContextNtBase()
-    : m_prev(nullptr)
-    , m_next(nullptr)
+    : m_next(nullptr)
     , m_isValueSet(false)
     , m_isErrorForwarded(false)
     , m_isShadow(false)
@@ -36,7 +35,7 @@ bool ContextNtBase::isFulfillable() const
     /* The context is fulfillable if both a result can be achieved (e.g. a value
      * can be set by a previous context or a Promise), and the result can be used
      * (i.e. it can be propagated to the next context or accessed via a Future). */
-    return (m_hasPromise || (m_prev != nullptr)) && (m_hasFuture || (m_next != nullptr));
+    return (m_hasPromise || m_prev.empty()) && (m_hasFuture || (m_next != nullptr));
 }
 
 void ContextNtBase::setValue()
@@ -54,10 +53,10 @@ void ContextNtBase::makeShadowOf(ContextNtBase *next)
     DLOG("makeShadowOf: " << next->alias());
     assert(!m_isShadow);
     assert(m_hasFuture);
-    assert(next->m_prev);
+    assert(next->m_prev.size() == 1);
     m_isShadow = true;
     m_hasFuture = false;
-    next->m_prev->unsetTarget();
+    (*next->m_prev.begin())->unsetTarget();
     setTarget(next);
 }
 
@@ -95,9 +94,9 @@ void ContextNtBase::setTarget(ContextNtBase *next)
 {
     DLOG("setTarget: " << next->alias());
     assert(!m_next);
-    assert(!next->m_prev);
+    assert(next->m_prev.count(this) == 0);
     m_next = next;
-    m_next->m_prev = this;
+    m_next->m_prev.insert(this);
     if ( m_isValueSet ) {
         fulfil();
     }
@@ -110,8 +109,8 @@ void ContextNtBase::unsetTarget()
 {
     if ( m_next != nullptr ) {
         DLOG("unsetTarget: " << m_next->alias());
-        assert(m_next->m_prev == this);
-        m_next->m_prev = nullptr;
+        assert(m_next->m_prev.count(this) == 1);
+        m_next->m_prev.erase(this);
         m_next->tryDestroy();
         m_next = nullptr;
         tryDestroy();
@@ -198,39 +197,27 @@ bool ContextNtBase::tryHandleSignal(Signal &error, SignalHandler &handler)
     return false;
 }
 
-void ContextNtBase::storeMessage(Signal &&msg)
+void ContextNtBase::acceptMessage(Signal &&msg) noexcept
 {
     /* The message must be sent to the currently running context. */
-    if ( m_prev != nullptr ) {
-        m_prev->storeMessage(std::move(msg));
-        return;
-    }
-
-    /* Search for an appropriate message handler. */
-    for ( auto &handler : m_messageHandlers ) {
-        if ( tryHandleSignal(msg, handler) ) {
-            return;
+    if ( !m_prev.empty() ) {
+        for ( auto *prev : m_prev ) {
+            prev->acceptMessage(std::move(msg));
         }
     }
-
-    m_storedMessages.push_back(std::move(msg));
 }
 
-void ContextNtBase::addMessageHandler(SignalHandler &&handler)
+void ContextNtBase::addMessageHandler(SignalHandler &&/*handler*/)
 {
-    m_messageHandlers.push_back(std::move(handler));
+}
 
-    /* Maybe the new error handler can handle a stored error? */
-    if ( m_prev == nullptr ) {
-        for ( auto &msg : m_storedMessages ) {
-            tryHandleSignal(msg, handler);
-        }
-    }
+void ContextNtBase::acceptInput(ContextNtBase */*ctx*/)
+{
 }
 
 void ContextNtBase::tryDestroy()
 {
-    if ( !(m_hasPromise || m_hasFuture || (m_prev != nullptr) || (m_next != nullptr)) ) {
+    if ( !(m_hasPromise || m_hasFuture || !m_prev.empty() || (m_next != nullptr)) ) {
         delete this;
     }
 }

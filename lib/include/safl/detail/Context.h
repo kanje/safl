@@ -11,6 +11,7 @@
 // Std includes:
 #include <memory>
 #include <vector>
+#include <set>
 
 namespace safl {
 
@@ -57,7 +58,7 @@ public:
     template<typename tMessage>
     void sendMessage(tMessage &&msg)
     {
-        storeMessage(makeSignal(std::forward<tMessage>(msg)));
+        acceptMessage(makeSignal(std::forward<tMessage>(msg)));
     }
 
 protected:
@@ -66,21 +67,21 @@ protected:
     void setTarget(ContextNtBase *next);
     void storeError(Signal &&error);
     void addErrorHandler(SignalHandler &&handler);
+    bool tryHandleSignal(Signal &error, SignalHandler &handler);
 
 private:
     void fulfil();
     void forwardError(Signal &&error);
-    bool tryHandleSignal(Signal &error, SignalHandler &handler);
 
-    void storeMessage(Signal &&msg);
-    void addMessageHandler(SignalHandler &&handler);
+    virtual void acceptMessage(Signal &&msg) noexcept;
+    virtual void addMessageHandler(SignalHandler &&handler);
 
-    virtual void acceptInput(ContextNtBase *ctx) = 0;
+    virtual void acceptInput(ContextNtBase *ctx);
     void unsetTarget();
     void tryDestroy();
 
 protected:
-    ContextNtBase *m_prev;
+    std::set<ContextNtBase*> m_prev;
     ContextNtBase *m_next;
     bool m_isValueSet;
     bool m_isErrorForwarded;
@@ -91,9 +92,6 @@ protected:
 private: // error handling
     Signal m_storedError;
     std::vector<SignalHandler> m_errorHandlers;
-
-    std::vector<Signal> m_storedMessages;
-    std::vector<SignalHandler> m_messageHandlers;
 };
 
 template<typename tValueType>
@@ -201,10 +199,20 @@ class InitialContext final
         : public ContextBase<tValue>
 {
 private:
-    void acceptInput(ContextNtBase */*ctx*/) noexcept override
+    void acceptMessage(Signal &&msg) noexcept override
     {
-        // do nothing
+        for ( auto &handler : m_messageHandlers ) {
+            this->tryHandleSignal(msg, handler);
+        }
     }
+
+    void addMessageHandler(SignalHandler &&handler) override
+    {
+        m_messageHandlers.push_back(std::move(handler));
+    }
+
+private:
+    std::vector<SignalHandler> m_messageHandlers;
 };
 
 template<typename tValue, typename tFunc, typename tInput>
