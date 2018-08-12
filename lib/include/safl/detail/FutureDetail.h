@@ -79,6 +79,12 @@ protected:
         m_ctx->attachPromise();
     }
 
+    PromiseBase(PromiseBase &&other) noexcept
+        : m_ctx(other.m_ctx)
+    {
+        other.m_ctx = nullptr;
+    }
+
     ~PromiseBase() noexcept
     {
         if ( m_ctx ) {

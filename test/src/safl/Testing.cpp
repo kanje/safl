@@ -87,6 +87,19 @@ bool Test::processSingle() noexcept
     return m_executor->processSingle();
 }
 
+bool Test::processMultiple(std::size_t cnt) noexcept
+{
+    if ( m_executor->queueSize() != cnt )
+    {
+        return false;
+    }
+
+    while ( cnt-- ) {
+        m_executor->processNext();
+    }
+    return true;
+}
+
 std::size_t Test::queueSize() noexcept
 {
     return m_executor->queueSize();

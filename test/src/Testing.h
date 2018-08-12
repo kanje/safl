@@ -4,6 +4,7 @@
 
 // Code to test:
 #include <safl/Future.h>
+#include <safl/Composition.h>
 
 // Safl includes:
 #include <safl/Testing.h>
@@ -47,6 +48,30 @@ public:
 
 private:
     int m_value;
+};
+
+template<typename tValue>
+struct Profut
+{
+    Promise<tValue> p;
+    Future<tValue> f;
+
+    Profut(): f(p.future()) {}
+};
+
+template<typename tValue>
+struct ProfutVector
+{
+    std::vector<Promise<tValue>> p;
+    std::vector<Future<tValue>> f;
+
+    ProfutVector(std::size_t cnt)
+    {
+        for ( std::size_t i = 0; i < cnt; i++ ) {
+            p.emplace_back();
+            f.push_back(p.back().future());
+        }
+    }
 };
 
 inline std::ostream &operator<<(std::ostream &os, const MyInt &value)

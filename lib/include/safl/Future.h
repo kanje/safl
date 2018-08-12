@@ -34,10 +34,17 @@ public:
      * @brief Specify an error handler.
      */
     template<typename tFunc>
-    auto &onError(tFunc &&f) noexcept
+    auto &onError(tFunc &&f) & noexcept
     {
         m_ctx->onError(std::forward<tFunc>(f));
         return *static_cast<Future<tValueType>*>(this);
+    }
+
+    template<typename tFunc>
+    auto onError(tFunc &&f) && noexcept
+    {
+        m_ctx->onError(std::forward<tFunc>(f));
+        return std::move(*static_cast<Future<tValueType>*>(this));
     }
 
     /**
@@ -92,6 +99,15 @@ public:
     {
         ContextType *tmp = m_ctx;
         m_ctx->makeShadowOf(ctx);
+        m_ctx = nullptr;
+        return tmp;
+    }
+
+    [[ gnu::warn_unused_result ]]
+    ContextType *takeContext() noexcept
+    {
+        ContextType *tmp = m_ctx;
+        m_ctx->detachFuture(false);
         m_ctx = nullptr;
         return tmp;
     }

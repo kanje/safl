@@ -28,6 +28,19 @@ class SyncNextContext;
 template<typename tValueType, typename tFunc, typename tInputType>
 class AsyncNextContext;
 
+#ifdef SAFL_DEVELOPER
+/* This is a helper for printing setValue for vectors. */
+template<typename T>
+std::ostream &operator<<(std::ostream &os, const std::vector<T> &values)
+{
+    os << "{ ";
+    for ( const auto &value : values ) {
+        os << value << " ";
+    }
+    return os << " }";
+}
+#endif
+
 /*******************************************************************************
  * Base classes for contexts.
  */
@@ -35,7 +48,7 @@ class AsyncNextContext;
 class ContextNtBase
         : private UniqueInstance
 #ifdef SAFL_DEVELOPER
-        , protected DebugContext
+        , public DebugContext
 #endif
 {
 public:
@@ -43,10 +56,11 @@ public:
     bool isFulfillable() const;
     void setValue();
     void makeShadowOf(ContextNtBase *next);
+    void setTarget(ContextNtBase *next, bool doMakeDirect = false);
     void attachPromise();
     void detachPromise();
     void attachFuture();
-    void detachFuture();
+    void detachFuture(bool doTryDestroy = true);
 
 public:
     template<typename tFunc>
@@ -64,10 +78,10 @@ public:
 protected:
     ContextNtBase();
     virtual ~ContextNtBase();
-    void setTarget(ContextNtBase *next);
     void storeError(Signal &&error);
     void addErrorHandler(SignalHandler &&handler);
-    bool tryHandleSignal(Signal &error, SignalHandler &handler);
+    bool tryHandleSignal(Signal &sig, SignalHandler &handler);
+    bool tryHandleSignal(Signal &sig, std::vector<SignalHandler> &handlers);
 
 private:
     void fulfil();
@@ -76,7 +90,10 @@ private:
     virtual void acceptMessage(Signal &&msg) noexcept;
     virtual void addMessageHandler(SignalHandler &&handler);
 
+    virtual void acceptError(ContextNtBase *ctx, Signal &&error) noexcept;
+
     virtual void acceptInput(ContextNtBase *ctx);
+
     void unsetTarget();
     void tryDestroy();
 
@@ -201,9 +218,7 @@ class InitialContext final
 private:
     void acceptMessage(Signal &&msg) noexcept override
     {
-        for ( auto &handler : m_messageHandlers ) {
-            this->tryHandleSignal(msg, handler);
-        }
+        this->tryHandleSignal(msg, m_messageHandlers);
     }
 
     void addMessageHandler(SignalHandler &&handler) override

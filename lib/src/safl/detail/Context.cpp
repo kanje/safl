@@ -82,21 +82,25 @@ void ContextNtBase::attachFuture()
     m_hasFuture = true;
 }
 
-void ContextNtBase::detachFuture()
+void ContextNtBase::detachFuture(bool doTryDestroy)
 {
     DLOG("detachFuture");
     assert(m_hasFuture);
     m_hasFuture = false;
-    tryDestroy();
+    if ( doTryDestroy ) {
+        tryDestroy();
+    }
 }
 
-void ContextNtBase::setTarget(ContextNtBase *next)
+void ContextNtBase::setTarget(ContextNtBase *next, bool doMakeDirect)
 {
-    DLOG("setTarget: " << next->alias());
+    DLOG("setTarget: " << next->alias() <<
+         (m_isShadow || doMakeDirect ? " (direct)" : ""));
     assert(!m_next);
     assert(next->m_prev.count(this) == 0);
     m_next = next;
     m_next->m_prev.insert(this);
+    m_isShadow = m_isShadow || doMakeDirect;
     if ( m_isValueSet ) {
         fulfil();
     }
@@ -119,7 +123,7 @@ void ContextNtBase::unsetTarget()
 
 void ContextNtBase::fulfil()
 {
-    DLOG("fulfil");
+    DLOG("fulfil" << (m_isShadow ? " (direct)" : ""));
     assert(Executor::instance() != nullptr);
 
     auto doFulfil = [this]()
@@ -146,10 +150,8 @@ void ContextNtBase::storeError(Signal &&error)
     assert(!m_storedError);
 
     /* Search for an appropriate error handler. */
-    for ( auto &handler : m_errorHandlers ) {
-        if ( tryHandleSignal(error, handler) ) {
-            return;
-        }
+    if ( tryHandleSignal(error, m_errorHandlers) ) {
+        return;
     }
 
     if ( m_next != nullptr ) {
@@ -163,7 +165,7 @@ void ContextNtBase::forwardError(Signal &&error)
 {
     /* If there is no error handler for this context, try the next one.
      * The next context is not destroyed, because m_next->m_prev is not null. */
-    m_next->storeError(std::move(error));
+    m_next->acceptError(this, std::move(error));
 
     /* Mark this context as fulfilled. This will make isReady() return a valid
      * value and prevent reporting a broken promise. */
@@ -184,15 +186,26 @@ void ContextNtBase::addErrorHandler(SignalHandler &&handler)
     }
 }
 
-bool ContextNtBase::tryHandleSignal(Signal &error, SignalHandler &handler)
+bool ContextNtBase::tryHandleSignal(Signal &sig, SignalHandler &handler)
 {
-    if ( handler->isOfTypeAs(error) ) {
+    if ( handler->isOfTypeAs(sig) ) {
         Executor::instance()->
-                invoke([this, error = std::move(error), handler = std::move(handler)]()
+                invoke([this, sig = std::move(sig), handler = std::move(handler)]()
         {
-            handler->accept(this, error.get());
+            handler->accept(this, sig.get());
         });
         return true;
+    }
+    return false;
+}
+
+bool ContextNtBase::tryHandleSignal(
+        Signal &sig, std::vector<SignalHandler> &handlers)
+{
+    for ( auto &handler : handlers ) {
+        if ( tryHandleSignal(sig, handler) ) {
+            return true;
+        }
     }
     return false;
 }
@@ -200,15 +213,24 @@ bool ContextNtBase::tryHandleSignal(Signal &error, SignalHandler &handler)
 void ContextNtBase::acceptMessage(Signal &&msg) noexcept
 {
     /* The message must be sent to the currently running context. */
-    if ( !m_prev.empty() ) {
+    if ( m_prev.size() == 1 ) {
+        /* Handle the most common case. */
+        (*m_prev.begin())->acceptMessage(std::move(msg));
+    } else {
         for ( auto *prev : m_prev ) {
-            prev->acceptMessage(std::move(msg));
+            prev->acceptMessage(msg->clone());
         }
     }
 }
 
 void ContextNtBase::addMessageHandler(SignalHandler &&/*handler*/)
 {
+}
+
+void ContextNtBase::acceptError(ContextNtBase *ctx, Signal &&error) noexcept
+{
+    assert(m_prev.count(ctx) == 1);
+    storeError(std::move(error));
 }
 
 void ContextNtBase::acceptInput(ContextNtBase */*ctx*/)

@@ -330,3 +330,100 @@ TEST_F(SaflTest, messageWithFutureChain)
     EXPECT_SMTH_INVOKED();
     EXPECT_EQ(42, calledWithInt);
 }
+
+TEST_F(SaflTest, collectEmpty)
+{
+    std::vector<Future<int>> fs;
+
+    bool isCalled = false;
+    auto f = collect(fs).then([&](const std::vector<int> &values)
+    {
+        if ( values.empty() ) {
+            isCalled = true;
+        }
+    });
+
+    EXPECT_FUTURE_FULFILLED();
+    EXPECT_TRUE(isCalled);
+}
+
+TEST_F(SaflTest, collectDestroyed)
+{
+    ProfutVector<MyInt> v(3);
+    collect(v.f);
+}
+
+TEST_F(SaflTest, collectSuccess)
+{
+    ProfutVector<MyInt> v(3);
+
+    std::size_t inSize;
+    int inValues[3] = {0, 0, 0};
+    auto f = collect(v.f).then([&](const std::vector<MyInt> &values)
+    {
+        inSize = values.size();
+        if ( inSize == 3 ) {
+            inValues[0] = values[0].value();
+            inValues[1] = values[1].value();
+            inValues[2] = values[2].value();
+        }
+    });
+    EXPECT_NO_FULFILLED_FUTURES();
+
+    v.p[1].setValue(MyInt(10));
+    EXPECT_NO_FULFILLED_FUTURES();
+
+    v.p[0].setValue(MyInt(1));
+    EXPECT_NO_FULFILLED_FUTURES();
+
+    v.p[2].setValue(MyInt(100));
+    EXPECT_FUTURE_FULFILLED();
+
+    EXPECT_EQ(3, inSize);
+    EXPECT_EQ(1, inValues[0]);
+    EXPECT_EQ(10, inValues[1]);
+    EXPECT_EQ(100, inValues[2]);
+}
+
+TEST_F(SaflTest, collectError)
+{
+    ProfutVector<int> v(3);
+
+    bool isCalled = false;
+    bool isError = false;
+    auto f = collect(v.f).then([&](const std::vector<int> &)
+    {
+        isCalled = true;
+    }).onError([&](const std::string &)
+    {
+        isError = true;
+    });
+
+    v.p[0].setValue(10);
+    EXPECT_NO_FULFILLED_FUTURES();
+
+    v.p[1].setError(std::string("ERROR"));
+    EXPECT_FUTURE_FULFILLED();
+
+    v.p[2].setValue(12);
+    EXPECT_NO_FULFILLED_FUTURES();
+
+    EXPECT_FALSE(isCalled);
+    EXPECT_TRUE(isError);
+}
+
+TEST_F(SaflTest, collectMessage)
+{
+    ProfutVector<int> v(2);
+
+    int inMsg0 = 0;
+    int inMsg1 = 0;
+    v.p[0].onMessage([&](int i) { inMsg0 = i; });
+    v.p[1].onMessage([&](int i) { inMsg1 = i; });
+
+    auto f = collect(v.f);
+    f.sendMessage(42);
+    EXPECT_MANY_INVOKED(2);
+    EXPECT_EQ(42, inMsg0);
+    EXPECT_EQ(42, inMsg1);
+}

@@ -16,6 +16,7 @@ endif()
 
 set(TARGET ${PROJECT_NAME})
 add_library(${TARGET}
+    include/safl/Composition.h
     include/safl/Executor.h
     include/safl/Future.h
     include/safl/ToFuture.h

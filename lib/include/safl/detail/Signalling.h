@@ -31,6 +31,7 @@ class SignalNtBase
 
 public:
     virtual ~SignalNtBase() = default;
+    virtual std::unique_ptr<SignalNtBase> clone() const noexcept = 0;
 };
 
 template<typename tData>
@@ -51,6 +52,11 @@ public:
     const tData &data() const noexcept
     {
         return m_data;
+    }
+
+    std::unique_ptr<SignalNtBase> clone() const noexcept override
+    {
+        return std::make_unique<SignalImpl<tData>>(m_data);
     }
 
 private:
