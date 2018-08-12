@@ -127,7 +127,7 @@ void ContextNtBase::fulfil()
     {
         /* m_next will not be deleted by acceptInput() because m_next->m_prev
          * is not null, so it is safe to operate on it. */
-        m_next->acceptInput();
+        m_next->acceptInput(this);
 
         /* This disconnects this and the next contexts. One or both of them might
          * be destroyed in process. */

@@ -75,7 +75,7 @@ private:
     void storeMessage(Signal &&msg);
     void addMessageHandler(SignalHandler &&handler);
 
-    virtual void acceptInput() = 0;
+    virtual void acceptInput(ContextNtBase *ctx) = 0;
     void unsetTarget();
     void tryDestroy();
 
@@ -141,7 +141,7 @@ class ContextBase
         using Traits = FunctionTraits<tFunc>;
 
         static_assert(Traits::NrArgs::value ==
-                      std::is_same<tValueType, void>::value ? 0 : 1,
+                      (std::is_same<tValueType, void>::value ? 0 : 1),
                       "then() handler for a void Future must not accept arguments, "
                       "and for other types of Future it must accept exactly one argument");
 
@@ -196,20 +196,20 @@ public:
  * Concrete future contexts.
  */
 
-template<typename tValueType>
+template<typename tValue>
 class InitialContext final
-        : public ContextBase<tValueType>
+        : public ContextBase<tValue>
 {
 private:
-    void acceptInput() noexcept override
+    void acceptInput(ContextNtBase */*ctx*/) noexcept override
     {
         // do nothing
     }
 };
 
-template<typename tValueType, typename tFunc, typename tInputType>
+template<typename tValue, typename tFunc, typename tInput>
 class NextContextBase
-        : public ContextBase<tValueType>
+        : public ContextBase<tValue>
 {
 public:
     NextContextBase(tFunc &&f)
@@ -218,69 +218,54 @@ public:
     }
 
 protected:
-    auto prev() const noexcept
-    {
-        return static_cast<ContextValueBase<tInputType>*>(this->m_prev);
-    }
-
-protected:
     std::decay_t<tFunc> m_f;
 };
 
-template<typename tValueType, typename tFunc, typename tInputType>
+template<bool HasValue, bool HasInput, typename xValue, typename xInput>
+using CondContextType =
+    std::enable_if_t<(HasValue != std::is_void<xValue>::value) &&
+                     (HasInput != std::is_void<xInput>::value),
+                     ContextValueBase<xInput>*>;
+
+template<typename tValue, typename tFunc, typename tInput>
 class SyncNextContext final
-        : public NextContextBase<tValueType, tFunc, tInputType>
+        : public NextContextBase<tValue, tFunc, tInput>
 {
-    using NextContextBase<tValueType, tFunc, tInputType>::NextContextBase;
+    using NextContextBase<tValue, tFunc, tInput>::NextContextBase;
 
 private:
-    void acceptInput() noexcept override
+    void acceptInput(ContextNtBase *ctx) noexcept override
+    {
+        acceptInput(static_cast<ContextValueBase<tInput>*>(ctx));
+    }
+
+    template<typename xValue = tValue, typename xInput = tInput>
+    void acceptInput(CondContextType<true, true, xValue, xInput> ctx) noexcept
     {
         DLOG(">> acceptInput");
-        this->setValue(this->m_f(this->prev()->value()));
+        this->setValue(this->m_f(ctx->value()));
         DLOG("<< acceptInput");
     }
-};
 
-template<typename tFunc, typename tInputType>
-class SyncNextContext<void, tFunc, tInputType> final
-        : public NextContextBase<void, tFunc, tInputType>
-{
-    using NextContextBase<void, tFunc, tInputType>::NextContextBase;
-
-private:
-    void acceptInput() noexcept override
+    template<typename xValue = tValue, typename xInput = tInput>
+    void acceptInput(CondContextType<false, true, xValue, xInput> ctx) noexcept
     {
         DLOG(">> acceptInput (void output)");
-        this->m_f(this->prev()->value());
+        this->m_f(ctx->value());
         this->setValue();
         DLOG("<< acceptInput (void output)");
     }
-};
 
-template<typename tValueType, typename tFunc>
-class SyncNextContext<tValueType, tFunc, void> final
-        : public NextContextBase<tValueType, tFunc, void>
-{
-    using NextContextBase<tValueType, tFunc, void>::NextContextBase;
-
-private:
-    void acceptInput() noexcept override
+    template<typename xValue = tValue, typename xInput = tInput>
+    void acceptInput(CondContextType<true, false, xValue, xInput>) noexcept
     {
         DLOG(">> acceptInput (void input)");
         this->setValue(this->m_f());
         DLOG("<< acceptInput (void input)");
     }
-};
 
-template<typename tFunc>
-class SyncNextContext<void, tFunc, void> final
-        : public NextContextBase<void, tFunc, void>
-{
-    using NextContextBase<void, tFunc, void>::NextContextBase;
-
-private:
-    void acceptInput() noexcept override
+    template<typename xValue = tValue, typename xInput = tInput>
+    void acceptInput(CondContextType<false, false, xValue, xInput>) noexcept
     {
         DLOG(">> acceptInput (void input and output)");
         this->m_f();
@@ -289,18 +274,24 @@ private:
     }
 };
 
-template<typename tValueType, typename tFunc, typename tInputType>
+template<typename tValue, typename tFunc, typename tInput>
 class AsyncNextContext final
-        : public NextContextBase<tValueType, tFunc, tInputType>
+        : public NextContextBase<tValue, tFunc, tInput>
 {
-    using NextContextBase<tValueType, tFunc, tInputType>::NextContextBase;
+    using NextContextBase<tValue, tFunc, tInput>::NextContextBase;
 
 private:
-    void acceptInput() noexcept override
+    void acceptInput(ContextNtBase *ctx) noexcept override
+    {
+        acceptInput(static_cast<ContextValueBase<tInput>*>(ctx));
+    }
+
+    template<typename xValue = tValue, typename xInput = tInput>
+    void acceptInput(CondContextType<true, true, xValue, xInput> ctx) noexcept
     {
         if ( m_shadow == nullptr ) {
             DLOG(">> acceptInput (create shadow)");
-            m_shadow = this->m_f(this->prev()->value()).makeShadowOf(this);
+            m_shadow = this->m_f(ctx->value()).makeShadowOf(this);
             DLOG("<< acceptInput (create shadow)");
         } else {
             DLOG(">> acceptInput (process shadow)");
@@ -310,7 +301,7 @@ private:
     }
 
 private:
-    ContextBase<tValueType> *m_shadow = nullptr;
+    ContextBase<tValue> *m_shadow = nullptr;
 };
 
 } // namespace detail
