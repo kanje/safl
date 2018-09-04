@@ -20,7 +20,9 @@ target_link_libraries(${TEST_LIBRARY}
     ${PROJECT_NAME}
 )
 
-set(TEST_TARGET ut-${PROJECT_NAME})
+## safl tests ##
+
+set(TEST_TARGET ut-safl)
 add_executable(${TEST_TARGET}
     src/SaflTests.cpp
     src/Testing.h
@@ -29,6 +31,33 @@ add_executable(${TEST_TARGET}
 target_link_libraries(${TEST_TARGET}
   PRIVATE
     ${TEST_LIBRARY}
+)
+
+gtest_add_tests(
+  TARGET
+    ${TEST_TARGET}
+  TEST_PREFIX
+    ${PROJECT_NAME}.
+)
+
+## safl-qt tests ##
+
+find_package(Qt5 COMPONENTS Core)
+
+set(TEST_TARGET ut-safl-qt)
+add_executable(${TEST_TARGET}
+    src/QtTests.cpp
+    src/Testing.h
+    src/MyObject.h
+)
+target_link_libraries(${TEST_TARGET}
+  PRIVATE
+    ${TEST_LIBRARY}
+    safl-qt
+)
+set_target_properties(${TEST_TARGET}
+  PROPERTIES
+    AUTOMOC ON
 )
 
 gtest_add_tests(

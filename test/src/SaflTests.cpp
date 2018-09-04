@@ -385,6 +385,29 @@ TEST_F(SaflTest, collectSuccess)
     EXPECT_EQ(100, inValues[2]);
 }
 
+TEST_F(SaflTest, collectVoid)
+{
+    ProfutVector<void> v(3);
+
+    bool collectCalled = false;
+    auto f = collect(v.f).then([&]()
+    {
+        collectCalled = true;
+    });
+    EXPECT_NO_FULFILLED_FUTURES();
+
+    v.p[1].setValue();
+    EXPECT_NO_FULFILLED_FUTURES();
+
+    v.p[0].setValue();
+    EXPECT_NO_FULFILLED_FUTURES();
+
+    v.p[2].setValue();
+    EXPECT_FUTURE_FULFILLED();
+
+    EXPECT_TRUE(collectCalled);
+}
+
 TEST_F(SaflTest, collectError)
 {
     ProfutVector<int> v(3);

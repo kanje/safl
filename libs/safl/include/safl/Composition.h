@@ -13,9 +13,33 @@ namespace safl {
 
 namespace detail {
 
+template<typename tPrevContext, typename tInput>
+class CollectContainer
+        : public std::map<tPrevContext, tInput>
+{
+};
+
+template<typename tPrevContext>
+class CollectContainer<tPrevContext, void>
+        : public std::set<tPrevContext>
+{
+};
+
+template<typename tInput>
+class CollectContextBase
+        : public ContextBase<std::vector<tInput>>
+{
+};
+
+template<>
+class CollectContextBase<void>
+        : public ContextBase<void>
+{
+};
+
 template<typename tInput>
 class CollectContext final
-        : public ContextBase<std::vector<tInput>>
+        : public CollectContextBase<tInput>
 {
 public:
     using PrevContextType = ContextValueBase<tInput>;
@@ -27,7 +51,7 @@ public:
         DLOG(">> collect: size=" << m_expectedSize);
 
         if ( m_expectedSize == 0 ) {
-            this->setValue({});
+            this->fulfil();
         } else {
             m_ctxOrder.reserve(m_expectedSize);
             for ( auto &future : futures ) {
@@ -50,7 +74,7 @@ public:
         DLOG("@@ collect input: " << ctx->alias() << " : " <<
              m_values.size() + 1 << "/" << m_expectedSize);
 
-        m_values.insert(std::make_pair(ctx, ctx->value()));
+        this->insertValue(ctx);
 
         if ( this->isReady() ) {
             /* At lest one collected future reported an error, so this future
@@ -60,17 +84,13 @@ public:
         }
 
         if ( m_values.size() == m_expectedSize ) {
-            std::vector<tInput> result;
-            result.reserve(m_expectedSize);
-            for ( auto *orderedCtx : m_ctxOrder ) {
-                result.push_back(m_values.at(orderedCtx));
-            }
-            this->setValue(std::move(result));
+            this->fulfil();
         }
     }
 
     void acceptError(ContextNtBase *ctx, Signal &&error) noexcept override
     {
+        (void)ctx;
         DLOG("@@ collect ERROR: " << ctx->alias());
         /* Report only the first received error. Any further errors from other
          * observed futures are ignored. */
@@ -82,9 +102,43 @@ public:
     }
 
 private:
+    template<typename xInput = tInput>
+    std::enable_if_t<std::is_void<xInput>::value>
+    fulfil() noexcept
+    {
+        this->setValue();
+    }
+
+    template<typename xInput = tInput>
+    std::enable_if_t<!std::is_void<xInput>::value>
+    fulfil() noexcept
+    {
+        std::vector<xInput> result;
+        result.reserve(m_expectedSize);
+        for ( auto *orderedCtx : m_ctxOrder ) {
+            result.push_back(m_values.at(orderedCtx));
+        }
+        this->setValue(std::move(result));
+    }
+
+    template<typename xInput = tInput>
+    std::enable_if_t<std::is_void<xInput>::value>
+    insertValue(PrevContextType *ctx) noexcept
+    {
+        m_values.insert(ctx);
+    }
+
+    template<typename xInput = tInput>
+    std::enable_if_t<!std::is_void<xInput>::value>
+    insertValue(PrevContextType *ctx) noexcept
+    {
+        m_values.insert(std::make_pair(ctx, ctx->value()));
+    }
+
+private:
     const std::size_t m_expectedSize;
     std::vector<PrevContextType*> m_ctxOrder;
-    std::map<PrevContextType*, tInput> m_values;
+    CollectContainer<PrevContextType*, tInput> m_values;
 };
 
 } // namespace detail
@@ -94,6 +148,11 @@ auto collect(std::vector<Future<tValue>> &futures) noexcept
     -> Future<std::vector<tValue>>
 {
     return { new detail::CollectContext<tValue>(futures) };
+}
+
+inline Future<void> collect(std::vector<Future<void>> &futures) noexcept
+{
+    return { new detail::CollectContext<void>(futures) };
 }
 
 } // namespace safl

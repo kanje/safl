@@ -28,19 +28,6 @@ class SyncNextContext;
 template<typename tValueType, typename tFunc, typename tInputType>
 class AsyncNextContext;
 
-#ifdef SAFL_DEVELOPER
-/* This is a helper for printing setValue for vectors. */
-template<typename T>
-std::ostream &operator<<(std::ostream &os, const std::vector<T> &values)
-{
-    os << "{ ";
-    for ( const auto &value : values ) {
-        os << value << " ";
-    }
-    return os << " }";
-}
-#endif
-
 /*******************************************************************************
  * Base classes for contexts.
  */

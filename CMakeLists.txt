@@ -7,6 +7,10 @@ project(safl VERSION 0.3 LANGUAGES CXX)
 
 option(SAFL_DEVELOPER "Enable the developer mode" OFF)
 
+if(SAFL_DEVELOPER)
+    add_definitions(-DSAFL_DEVELOPER)
+endif()
+
 # Check if we are embedded into a source tree of some other project:
 if("${CMAKE_PROJECT_NAME}" STREQUAL "${PROJECT_NAME}")
     set(SAFL_IS_ROOT_PROJECT TRUE)
@@ -29,8 +33,8 @@ add_compile_options(
     -Wold-style-cast
 )
 
-# Build the library and tests:
-add_subdirectory(lib)
+# Build libraries and tests:
+add_subdirectory(libs)
 add_subdirectory(test)
 
 # Add these files to IDE:
