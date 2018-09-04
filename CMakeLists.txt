@@ -33,9 +33,8 @@ add_compile_options(
     -Wold-style-cast
 )
 
-# Build libraries and tests:
+# Build libraries:
 add_subdirectory(libs)
-add_subdirectory(test)
 
 # Add these files to IDE:
 add_custom_target(${PROJECT_NAME}-extra-files

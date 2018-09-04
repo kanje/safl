@@ -2,7 +2,7 @@
  * This file is a part of Stand-alone Future Library (safl).
  */
 
-#include "Testing.h"
+#include <safl/testing/Testing.h>
 
 #include "MyObject.h"
 
@@ -12,6 +12,9 @@
 
 #include <QCoreApplication>
 #include <QTimer>
+
+using namespace safl;
+using namespace safl::testing;
 
 namespace {
 

@@ -2,20 +2,20 @@
 # This file is a part of Stand-alone Future Library (safl).
 #
 
-find_package(Qt5 COMPONENTS Core REQUIRED)
+find_package(GTest REQUIRED)
 
-set(TARGET safl-qt)
+set(TARGET safl-testing)
 add_library(${TARGET}
-    include/safl/qt/Executor.h
-    include/safl/qt/Futurize.h
-    src/safl/qt/Executor.cpp
+    include/safl/testing/Testing.h
+    src/safl/testing/Testing.cpp
 )
 target_include_directories(${TARGET}
   PUBLIC
     include
+    ${GTEST_INCLUDE_DIRS}
 )
 target_link_libraries(${TARGET}
   PUBLIC
+    ${GTEST_BOTH_LIBRARIES}
     safl
-    Qt5::Core
 )

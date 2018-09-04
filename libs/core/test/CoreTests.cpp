@@ -2,26 +2,37 @@
  * This file is a part of Stand-alone Future Library (safl).
  */
 
-// Testing:
-#include "Testing.h"
+#include <safl/testing/Testing.h>
 
-TEST_F(SaflTest, canCreatePromisePod)
+using namespace safl;
+using namespace safl::testing;
+
+namespace {
+
+class CoreTest
+        : public Test
+{
+};
+
+} // anonymous namespace
+
+TEST_F(CoreTest, canCreatePromisePod)
 {
     Promise<int> p;
 }
 
-TEST_F(SaflTest, canCreatePromiseNoDefaultCtor)
+TEST_F(CoreTest, canCreatePromiseNoDefaultCtor)
 {
     Promise<MyInt> p;
 }
 
-TEST_F(SaflTest, fulfilledPromiseWithoutFuture)
+TEST_F(CoreTest, fulfilledPromiseWithoutFuture)
 {
     Promise<int> p;
     p.setValue(32);
 }
 
-TEST_F(SaflTest, valueThenLambda)
+TEST_F(CoreTest, valueThenLambda)
 {
     Promise<int> p;
     auto f = p.future();
@@ -50,7 +61,7 @@ TEST_F(SaflTest, valueThenLambda)
     EXPECT_TRUE(secondLambdaCalled);
 }
 
-TEST_F(SaflTest, lvalueLambda)
+TEST_F(CoreTest, lvalueLambda)
 {
     Promise<int> p;
     auto f = p.future();
@@ -78,7 +89,7 @@ static int divideByTwo(int value)
     return value / 2;
 }
 
-TEST_F(SaflTest, setValueBeforeThen)
+TEST_F(CoreTest, setValueBeforeThen)
 {
     Promise<int> p;
     auto f = p.future();
@@ -112,18 +123,19 @@ TEST_F(SaflTest, setValueBeforeThen)
     EXPECT_EQ(72, calledWith);
 }
 
-TEST_F(SaflTest, futureThenFuture)
+TEST_F(CoreTest, futureThenFuture)
 {
-    SharedPromise<std::string> p;
+    Promise<MyInt> p1;
+    SharedPromise<std::string> p2;
 
-    auto f = future(0);
+    auto f = p1.future();
 
     int calledWith = 0;
     std::string calledString;
-    f.then([&calledWith, p](const MyInt &value) -> Future<std::string>
+    f.then([&calledWith, p2](const MyInt &value) -> Future<std::string>
     {
         calledWith = value.value();
-        return p->future();
+        return p2->future();
     }).then([&](const std::string &value)
     {
         calledString = value;
@@ -131,14 +143,14 @@ TEST_F(SaflTest, futureThenFuture)
 
     EXPECT_NO_FULFILLED_FUTURES();
 
-    setValue(0, 1986);
+    p1.setValue(MyInt(1986));
     EXPECT_FUTURE_FULFILLED();
     EXPECT_EQ(1986, calledWith);
     EXPECT_TRUE(calledString.empty());
 
     EXPECT_NO_FULFILLED_FUTURES();
 
-    p->setValue("hello, world");
+    p2->setValue("hello, world");
 
     /* Only one future must be fulfilled. Multiple dispatching for queueing
      * futures is not acceptable! */
@@ -146,7 +158,7 @@ TEST_F(SaflTest, futureThenFuture)
     EXPECT_EQ("hello, world", calledString);
 }
 
-TEST_F(SaflTest, basicOnError)
+TEST_F(CoreTest, basicOnError)
 {
     Promise<double> p;
     Future<double> f = p.future();
@@ -172,7 +184,7 @@ TEST_F(SaflTest, basicOnError)
     EXPECT_EQ("hello, world", calledWithString);
 }
 
-TEST_F(SaflTest, onErrorWithVoidFuture)
+TEST_F(CoreTest, onErrorWithVoidFuture)
 {
     Promise<void> p;
     Future<void> f = p.future();
@@ -189,7 +201,7 @@ TEST_F(SaflTest, onErrorWithVoidFuture)
     EXPECT_EQ(99, calledWithInt);
 }
 
-TEST_F(SaflTest, setErrorBeforeOnError)
+TEST_F(CoreTest, setErrorBeforeOnError)
 {
     Promise<int> p;
     Future<int> f = p.future();
@@ -222,7 +234,7 @@ TEST_F(SaflTest, setErrorBeforeOnError)
     EXPECT_EQ(10, f.value());
 }
 
-TEST_F(SaflTest, errorWithMultipleFutures)
+TEST_F(CoreTest, errorWithMultipleFutures)
 {
     Promise<int> p;
     Future<int> f1 = p.future();
@@ -254,7 +266,7 @@ TEST_F(SaflTest, errorWithMultipleFutures)
     EXPECT_EQ(99, f2.value());
 }
 
-TEST_F(SaflTest, errorBeforeThenAndOnError)
+TEST_F(CoreTest, errorBeforeThenAndOnError)
 {
     Promise<int> p;
     Future<int> f1 = p.future();
@@ -272,7 +284,7 @@ TEST_F(SaflTest, errorBeforeThenAndOnError)
     EXPECT_EQ(-42, calledWithInt);
 }
 
-TEST_F(SaflTest, brokenPromise)
+TEST_F(CoreTest, brokenPromise)
 {
     bool isPromiseBroken = false;
     SharedPromise<MyInt> p;
@@ -289,7 +301,7 @@ TEST_F(SaflTest, brokenPromise)
     EXPECT_TRUE(isPromiseBroken);
 }
 
-TEST_F(SaflTest, basicMessage)
+TEST_F(CoreTest, basicMessage)
 {
     Promise<int> p;
     Future<int> f = p.future();
@@ -306,7 +318,7 @@ TEST_F(SaflTest, basicMessage)
     EXPECT_EQ(42, calledWithInt);
 }
 
-TEST_F(SaflTest, messageWithFutureChain)
+TEST_F(CoreTest, messageWithFutureChain)
 {
     Promise<int> p;
     Future<int> f1 = p.future();
@@ -331,7 +343,7 @@ TEST_F(SaflTest, messageWithFutureChain)
     EXPECT_EQ(42, calledWithInt);
 }
 
-TEST_F(SaflTest, collectEmpty)
+TEST_F(CoreTest, collectEmpty)
 {
     std::vector<Future<int>> fs;
 
@@ -347,13 +359,13 @@ TEST_F(SaflTest, collectEmpty)
     EXPECT_TRUE(isCalled);
 }
 
-TEST_F(SaflTest, collectDestroyed)
+TEST_F(CoreTest, collectDestroyed)
 {
     ProfutVector<MyInt> v(3);
     collect(v.f);
 }
 
-TEST_F(SaflTest, collectSuccess)
+TEST_F(CoreTest, collectSuccess)
 {
     ProfutVector<MyInt> v(3);
 
@@ -385,7 +397,7 @@ TEST_F(SaflTest, collectSuccess)
     EXPECT_EQ(100, inValues[2]);
 }
 
-TEST_F(SaflTest, collectVoid)
+TEST_F(CoreTest, collectVoid)
 {
     ProfutVector<void> v(3);
 
@@ -408,7 +420,7 @@ TEST_F(SaflTest, collectVoid)
     EXPECT_TRUE(collectCalled);
 }
 
-TEST_F(SaflTest, collectError)
+TEST_F(CoreTest, collectError)
 {
     ProfutVector<int> v(3);
 
@@ -435,7 +447,7 @@ TEST_F(SaflTest, collectError)
     EXPECT_TRUE(isError);
 }
 
-TEST_F(SaflTest, collectMessage)
+TEST_F(CoreTest, collectMessage)
 {
     ProfutVector<int> v(2);
 

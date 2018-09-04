@@ -2,10 +2,10 @@
  * This file is a part of Stand-alone Future Library (safl).
  */
 
-// Testing:
-#include "Testing.h"
+#include <safl/testing/Testing.h>
 
-using detail::FunctionTraits;
+using namespace safl::testing;
+using safl::detail::FunctionTraits;
 
 template<typename tFunc>
 void checkValue(tFunc)

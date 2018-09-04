@@ -28,3 +28,24 @@ target_compile_features(${TARGET}
   PUBLIC
     cxx_lambda_init_captures # this enforces c++14 or later
 )
+
+safl_use_clang_tidy(${TARGET})
+
+## Unit tests ##
+
+set(TEST_TARGET ut-${TARGET})
+add_executable(${TEST_TARGET}
+    test/CoreTests.cpp
+    test/TraitsTests.cpp
+)
+target_link_libraries(${TEST_TARGET}
+  PRIVATE
+    safl-testing
+)
+
+gtest_add_tests(
+  TARGET
+    ${TEST_TARGET}
+  TEST_PREFIX
+    ${PROJECT_NAME}.
+)

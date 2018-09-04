@@ -2,21 +2,26 @@
  * This file is a part of Stand-alone Future Library (safl).
  */
 
-// Code to test:
 #include <safl/Future.h>
 #include <safl/Composition.h>
 
-// Safl includes:
-#include <safl/Testing.h>
+#include <gtest/gtest.h>
 
-// Std includes:
-#include <map>
+#include <memory>
+#include <vector>
 #include <functional>
+
+#define EXPECT_SMTH_INVOKED() EXPECT_TRUE(processSingle())
+#define EXPECT_MANY_INVOKED(__n) EXPECT_TRUE(processMultiple(__n))
+#define EXPECT_NOTHING_INVOKED() EXPECT_EQ(0, queueSize())
 
 #define EXPECT_FUTURE_FULFILLED() EXPECT_SMTH_INVOKED()
 #define EXPECT_NO_FULFILLED_FUTURES() EXPECT_NOTHING_INVOKED()
 
-using namespace safl;
+namespace safl {
+namespace testing {
+
+class Executor;
 
 class MyInt final
 {
@@ -50,6 +55,11 @@ private:
     int m_value;
 };
 
+inline std::ostream &operator<<(std::ostream &os, const MyInt &value)
+{
+    return os << "MyInt(" << value.value() << ")";
+}
+
 template<typename tValue>
 struct Profut
 {
@@ -74,29 +84,20 @@ struct ProfutVector
     }
 };
 
-inline std::ostream &operator<<(std::ostream &os, const MyInt &value)
-{
-    return os << "MyInt(" << value.value() << ")";
-}
-
-class SaflTest
-        : public safl::testing::Test
+class Test
+        : public ::testing::Test
 {
 public:
-    Future<MyInt> future(int key)
-    {
-        SharedPromise<MyInt> p;
-        m_promises[key] = p;
-        return p->future();
-    }
+    Test() noexcept;
+    ~Test() noexcept;
 
-    void setValue(int key, int value)
-    {
-        SharedPromise<MyInt> p = m_promises[key];
-        m_promises.erase(key);
-        p->setValue(MyInt(value));
-    }
+    bool processSingle() noexcept;
+    bool processMultiple(std::size_t cnt) noexcept;
+    std::size_t queueSize() noexcept;
 
 private:
-    std::map<int, SharedPromise<MyInt>> m_promises;
+    std::unique_ptr<Executor> m_executor;
 };
+
+} // namespace testing
+} // namespace safl

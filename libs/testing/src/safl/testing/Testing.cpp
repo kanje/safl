@@ -3,7 +3,7 @@
  */
 
 // Self-include:
-#include <safl/Testing.h>
+#include <safl/testing/Testing.h>
 
 // Safl includes:
 #include <safl/Executor.h>
@@ -14,10 +14,9 @@
 
 namespace safl {
 namespace testing {
-namespace detail {
 
-class TestExecutor final
-        : public Executor
+class Executor final
+        : public safl::Executor
 {
 public:
     void invoke(Task &&task) noexcept override;
@@ -29,13 +28,13 @@ private:
     std::queue<Task> m_queue;
 };
 
-} // namespace detail
 } // namespace testing
 } // namespace safl
 
 using namespace safl;
 using namespace safl::testing;
-using namespace safl::testing::detail;
+
+using TestExecutor = safl::testing::Executor;
 
 void TestExecutor::invoke(Task &&task) noexcept
 {
@@ -44,8 +43,7 @@ void TestExecutor::invoke(Task &&task) noexcept
 
 bool TestExecutor::processSingle()
 {
-    if ( m_queue.size() != 1 )
-    {
+    if ( m_queue.size() != 1 ) {
         return false;
     }
 
@@ -94,8 +92,9 @@ bool Test::processMultiple(std::size_t cnt) noexcept
         return false;
     }
 
-    while ( cnt-- ) {
+    while ( cnt > 0 ) {
         m_executor->processNext();
+        cnt--;
     }
     return true;
 }
