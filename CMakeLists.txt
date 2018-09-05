@@ -3,7 +3,7 @@
 #
 
 cmake_minimum_required(VERSION 3.9)
-project(safl VERSION 0.3 LANGUAGES CXX)
+project(safl VERSION 0.4 LANGUAGES CXX)
 
 option(SAFL_DEVELOPER "Enable the developer mode" OFF)
 
@@ -18,20 +18,6 @@ endif()
 
 # Documentation:
 add_subdirectory(doc)
-
-# Enable unit-testing:
-enable_testing()
-
-# Warning options:
-add_compile_options(
-    -pedantic
-    -Werror
-    -Wall
-    -Wextra
-    -Wconversion
-    -Wnon-virtual-dtor
-    -Wold-style-cast
-)
 
 # Build libraries:
 add_subdirectory(libs)

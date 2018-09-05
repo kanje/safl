@@ -16,6 +16,7 @@ INPUT                  = @PROJECT_SOURCE_DIR@
 EXAMPLE_PATH           = @PROJECT_SOURCE_DIR@
 FILE_PATTERNS          = *.cpp *.h *.dox *.md
 RECURSIVE              = YES
+EXCLUDE                = @PROJECT_BINARY_DIR@
 
 GENERATE_HTML          = YES
 HTML_COLORSTYLE_HUE    = 187

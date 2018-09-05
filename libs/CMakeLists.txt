@@ -4,6 +4,23 @@
 
 include(GNUInstallDirs)
 
+# Use standard C++:
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Enable unit-testing:
+enable_testing()
+
+# Warning options:
+add_compile_options(
+    -pedantic
+    -Werror
+    -Wall
+    -Wextra
+    -Wconversion
+    -Wnon-virtual-dtor
+    -Wold-style-cast
+)
+
 find_program(CLANG_TIDY_EXECUTABLE
   NAMES
     clang-tidy
@@ -19,11 +36,6 @@ function(safl_configure_target TARGET)
             CXX_CLANG_TIDY "${CLANG_TIDY_COMMAND}"
         )
     endif()
-
-    set_target_properties(${TARGET}
-      PROPERTIES
-        SOVERSION ${PROJECT_VERSION}
-    )
 
     set(SAFL_INSTALL_INCLUDEDIR ${CMAKE_INSTALL_INCLUDEDIR}/safl-${PROJECT_VERSION}/${TARGET})
 
