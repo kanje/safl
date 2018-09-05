@@ -20,16 +20,8 @@ add_library(${TARGET}
     src/safl/detail/Context.cpp
     src/safl/detail/DebugContext.cpp
 )
-target_include_directories(${TARGET}
-  PUBLIC
-    include
-)
-target_compile_features(${TARGET}
-  PUBLIC
-    cxx_lambda_init_captures # this enforces c++14 or later
-)
 
-safl_use_clang_tidy(${TARGET})
+safl_configure_target(${TARGET})
 
 ## Unit tests ##
 

@@ -2,12 +2,15 @@
 # This file is a part of Stand-alone Future Library (safl).
 #
 
-# Use clang-tidy if available:
+include(GNUInstallDirs)
+
 find_program(CLANG_TIDY_EXECUTABLE
   NAMES
     clang-tidy
 )
-macro(safl_use_clang_tidy TARGET)
+
+function(safl_configure_target TARGET)
+    # Use clang-tidy if available:
     if(CLANG_TIDY_EXECUTABLE)
         set(CLANG_TIDY_COMMAND ${CLANG_TIDY_EXECUTABLE}
                           -checks=-*,performance*,readability*,misc*,modernize*)
@@ -16,7 +19,41 @@ macro(safl_use_clang_tidy TARGET)
             CXX_CLANG_TIDY "${CLANG_TIDY_COMMAND}"
         )
     endif()
-endmacro()
+
+    set_target_properties(${TARGET}
+      PROPERTIES
+        SOVERSION ${PROJECT_VERSION}
+    )
+
+    set(SAFL_INSTALL_INCLUDEDIR ${CMAKE_INSTALL_INCLUDEDIR}/safl-${PROJECT_VERSION}/${TARGET})
+
+    target_include_directories(${TARGET}
+      PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+      INTERFACE
+        $<INSTALL_INTERFACE:${SAFL_INSTALL_INCLUDEDIR}>
+    )
+
+    target_compile_features(${TARGET}
+      PUBLIC
+        cxx_lambda_init_captures # this enforces c++14 or later
+    )
+
+    install(
+      TARGETS
+        ${TARGET}
+      EXPORT
+        SaflTargets
+      ARCHIVE DESTINATION
+        ${CMAKE_INSTALL_LIBDIR}/safl-${PROJECT_VERSION}
+    )
+    install(
+      DIRECTORY
+        include/
+      DESTINATION
+        ${SAFL_INSTALL_INCLUDEDIR}
+    )
+endfunction()
 
 # Build libraries:
 add_subdirectory(testing)

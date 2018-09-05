@@ -1,0 +1,8 @@
+#
+# This file is a part of Stand-alone Future Library (safl).
+#
+
+@PACKAGE_INIT@
+
+include(${CMAKE_CURRENT_LIST_DIR}/SaflTargets.cmake)
+check_required_components("safl")

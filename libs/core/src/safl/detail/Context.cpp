@@ -229,6 +229,7 @@ void ContextNtBase::addMessageHandler(SignalHandler &&/*handler*/)
 
 void ContextNtBase::acceptError(ContextNtBase *ctx, Signal &&error) noexcept
 {
+    (void)ctx;
     assert(m_prev.count(ctx) == 1);
     storeError(std::move(error));
 }

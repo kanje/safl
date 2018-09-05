@@ -10,17 +10,13 @@ add_library(${TARGET}
     include/safl/qt/Futurize.h
     src/safl/qt/Executor.cpp
 )
-target_include_directories(${TARGET}
-  PUBLIC
-    include
-)
 target_link_libraries(${TARGET}
   PUBLIC
     safl
     Qt5::Core
 )
 
-safl_use_clang_tidy(${TARGET})
+safl_configure_target(${TARGET})
 
 ## Unit tests ##
 
